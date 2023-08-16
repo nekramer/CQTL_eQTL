@@ -109,6 +109,117 @@ rule filterVCFvariants:
         bgzip output/vcf/{params.prefix}_qtl.recode.vcf && tabix -p vcf {output.vcf}
         """
 
+rule align:
+    input:
+        R1 = rules.trim.output.trim1,
+        R2 = rules.trim.output.trim2,
+        vcf = rules.filterVCFvariants.output.vcf
+    output:
+        bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.out.bam'
+    threads: 8
+    log:
+        out = "output/logs/align_{group}.out",
+        err = "output/logs/align_{group}.err"
+    params:
+        genomeDir = config['genomeDir'],
+        starVersion = config['starVersion']
+    shell:
+        'module load star/{params.starVersion} &&'
+        'mkdir -p output/{wildcards.group}/align &&'
+        'star --runThreadN {threads} '
+        '--genomeDir {params.genomeDir} '
+        '--readFilesCommand zcat ' 
+        '--readFilesIn {input.R1} {input.R2} '
+        '--outFileNamePrefix output/{wildcards.group}/align/{wildcards.group}. ' 
+        '--outSAMtype BAM SortedByCoordinate '
+        '--outFilterType BySJout '
+        '--outFilterMultimapNmax 20 ' 
+        '--alignSJoverhangMin 8 ' 
+        '--alignSJDBoverhangMin 1 '
+        '--outFilterMismatchNmax 999 ' 
+        '--outFilterMismatchNoverReadLmax 0.04 ' 
+        '--alignIntronMin 20 ' 
+        '--alignIntronMax 1000000 '
+        '--alignMatesGapMax 1000000 '
+        '--waspOutputMode SAMtag '
+        '--varVCFfile <(zcat {input.vcf}) 1> {log.out}'
+    
+# Filter tagged WASP reads
+rule WASPfilter:
+    input:
+        R = rules.align.output.bam
+    output:
+        bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.bam',
+        bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.bam.bai'
+    threads: 2
+    log:
+        err1 = 'output/logs/WASPfilter_{group}_grep.err',
+        err2 = 'output/logs/WASPfilter_{group}_samtoolsView.err',
+        err3 = 'output/logs/WASPfilter_{group}_samtoolsIndex.err'
+    shell:
+        """
+        module load samtools
+        # Add header
+        samtools view -H {input.R} > output/{wildcards.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam
+        
+        # Grep for WASP-passing reads
+        samtools view {input.R} | grep 'vW:i:1' >> output/{wildcards.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam 2> {log.err1}
+
+        # Compress and index
+        samtools view -bS output/{wildcard.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam > {output.bam} 2> {log.err2}
+        samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err3}
+        """
+
+rule addReadGroups:
+    input:
+        bam = rules.WASPfilter.output.bam,
+        bai = rules.WASPfilter.output.bai
+    output:
+        bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam',
+        bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam.bai'
+    params:
+        picardVersion = config['picardVersion']
+    log:
+        err1 = 'output/logs/addReadGroups_{group}.err',
+        err2 = 'outptu/logs/addReadGroups_{group}_index.err'
+    shell:
+        """
+        module load picard/{params.picardVersion}
+        module load samtools
+
+        # Parse group for donor name to add to read group
+        IFS="_" read -r -a array <<< {wildcards.group}
+        donor=${{array[1]}}
+
+        picard AddOrReplaceReadGroups -I {input.bam} -O {output.bam} --RGSM ${{donor}} --RGPL ILLUMINA --RGLB lib1 --RGPU unit1 2> {log.err1}
+        # Index
+        samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err2}
+        """
+
+rule verifybamid:
+    input:
+        vcf = rules.filterVCFvariants.output.vcf,
+        bam = rules.addReadGroups.output.bam,
+        bai = rules.addReadGroups.output.bai
+    output:
+        'output/qc/{group}_verifybamid.selfSM',
+        'output/qc/{group}_verifybamid.selfRG',
+        'output/qc/{group}_verifybamid.bestRG',
+        'output/qc/{group}_verifybamid.bestSM',
+        'output/qc/{group}_verifybamid.depthRG',
+        'output/qc/{group}_verifybamid.depthSM'
+    params:
+        verifybamid = config['verifybamid']
+    log:
+        err = 'output/logs/verifybamid_{group}.err'
+    shell:
+        """
+        {params.verifybamid} --vcf {input.vcf} --bam {input.bam} --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
+        """
+
+## Add rule to relabel any sample swaps
+
+
 rule quant:
     input:
         trim1 = rules.trim.output.trim1,
@@ -121,7 +232,6 @@ rule quant:
     log:
         out = 'output/logs/quant_{group}.out',
         err = 'output/logs/quant_{group}.err'
-
     shell:
         """
         module load salmon/{params.version}

@@ -32,6 +32,12 @@ samtoolsVersion: "1.9"
 pythonVersion: "3.9.6"
 fastqcVersion: "0.11.9"
 trimgaloreVersion: "0.6.7"
+starVersion: "2.7.10a"
+picardVersion: "2.26.11"
+
+# Software paths
+verifybamid: '/work/users/n/e/nekramer/software/verifyBamID_1.1.3/verifyBamID/bin/verifyBamID'
+
 
 ## Covariate parameters
 RNAKitBatch: 'TRUE'
