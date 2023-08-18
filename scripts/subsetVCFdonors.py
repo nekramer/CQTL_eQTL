@@ -13,10 +13,12 @@ vcfDonors = donorFile.iloc[:,0].values
 rnaDonors = sys.argv[2].split(",")
 
 keepDonors = []
-# Subset vcfDonors for rnaDonors
+# Check that rnaDonors have a match in vcfDonors and append to keepDonors
 for rnaDonor in rnaDonors:
-  vcfDonor = difflib.get_close_matches(rnaDonor, vcfDonors, 1, cutoff = 0.4)
-  keepDonors.append(vcfDonor[0])
+  if rnaDonor not in vcfDonors:
+    print("Donor " + rnaDonor + " not found in VCF file")
+  else:
+    keepDonors.append(rnaDonor)
 
 
 samples = pd.DataFrame(keepDonors)

@@ -22,10 +22,39 @@ include: "VCFprocessing.smk"
 
 include: "RNAprocessing.smk"
 
-rule subsetVCFdonors:
+# Rename geno sample IDs in VCF to donor IDs
+rule renameVCFdonors:
     input:
         vcf = rules.updateConfig.output.v,
         index = rules.updateConfig.output.i
+    output:
+        vcf = 'output/vcf/' + vcf_prefix + '_rename.vcf.gz',
+        index = 'output/vcf/' + vcf_prefix + '_rename.vcf.gz.tbi'
+    params:
+        samtoolsVersion = config['samtoolsVersion'],
+        pythonVersion = config['pythonVersion'],
+        prefix = vcf_prefix
+    log:
+        pythonOut = 'output/logs/renameVCFdonors_py.out',
+        pythonErr = 'output/logs/renameVCFdonors_py.err',
+        bcftoolsErr = 'output/logs/renameVCFdonors_bcftools.err'
+    shell:
+        """
+        module load samtools/{params.samtoolsVersion}
+        module load python/{params.pythonVersion}
+        bcftools query -l {input.vcf} > donors.txt
+        python3 scripts/renameVCFdonors.py donors.txt 1> {log.pythonOut} 2> {log.pythonErr}
+        bcftools reheader -s samples.txt {input.vcf} > output/vcf/{params.prefix}_rename.vcf 2> {log.bcftoolsErr}
+        bgzip output/vcf/{params.prefix}_rename.vcf && tabix -p vcf {output.vcf}
+        rm donors.txt
+        rm samples.txt
+        """
+
+# Subset VCF to only include genotypes from donors in samplesheet
+rule subsetVCFdonors:
+    input:
+        vcf = rules.renameVCFdonors.output.vcf,
+        index = rules.renameVCFdonors.output.index
     output:
         vcf = 'output/vcf/' + vcf_prefix + '_subset.vcf'
     params:
@@ -48,38 +77,10 @@ rule subsetVCFdonors:
         rm subset.txt
         """
 
-rule renameVCFdonors:
-    input:
-        vcf = rules.subsetVCFdonors.output.vcf
-    output:
-        vcf = 'output/vcf/' + vcf_prefix + '_rename.vcf.gz',
-        index = 'output/vcf/' + vcf_prefix + '_rename.vcf.gz.tbi'
-    params:
-        donors = ",".join(samples['Donor'].unique().tolist()),
-        samtoolsVersion = config['samtoolsVersion'],
-        pythonVersion = config['pythonVersion'],
-        prefix = vcf_prefix
-    log:
-        pythonOut = 'output/logs/renameVCFdonors_py.out',
-        pythonErr = 'output/logs/renameVCFdonors_py.err',
-        bcftoolsErr = 'output/logs/renameVCFdonors_bcftools.err'
-    shell:
-        """
-        module load samtools/{params.samtoolsVersion}
-        module load python/{params.pythonVersion}
-        bcftools query -l {input.vcf} > donors.txt
-        python3 scripts/renameVCFdonors.py donors.txt {params.donors} 1> {log.pythonOut} 2> {log.pythonErr}
-        bcftools reheader -s samples.txt -o output/vcf/{params.prefix}_rename.vcf {input.vcf} 2> {log.bcftoolsErr}
-        bgzip output/vcf/{params.prefix}_rename.vcf && tabix -p vcf {output.vcf}
-        rm donors.txt
-        rm samples.txt
-        """
-
 ## Rule for MAF filtering and het num filtering on VCF
 rule filterVCFvariants:
     input:
-        vcf = rules.renameVCFdonors.output.vcf,
-        index = rules.renameVCFdonors.output.index
+        vcf = rules.subsetVCFdonors.output.vcf
     output:
         vcf = 'output/vcf/' + vcf_prefix + '_qtl.recode.vcf.gz',
         index = 'output/vcf/' + vcf_prefix + '_qtl.recode.vcf.gz.tbi'
@@ -97,7 +98,6 @@ rule filterVCFvariants:
         hetFilter_err = 'output/logs/hetFilter.err',
         vcfFilter_out = 'output/logs/vcfFilter.out',
         vcfFilter_err = 'output/logs/vcfFilter.err'
-        
     shell:
         """
         module load samtools/{params.samtoolsVersion}
@@ -170,52 +170,53 @@ rule WASPfilter:
         samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err3}
         """
 
-rule addReadGroups:
-    input:
-        bam = rules.WASPfilter.output.bam,
-        bai = rules.WASPfilter.output.bai
-    output:
-        bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam',
-        bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam.bai'
-    params:
-        picardVersion = config['picardVersion']
-    log:
-        err1 = 'output/logs/addReadGroups_{group}.err',
-        err2 = 'outptu/logs/addReadGroups_{group}_index.err'
-    shell:
-        """
-        module load picard/{params.picardVersion}
-        module load samtools
+# Add read groups to bam files, using donor name as group
+#rule addReadGroups:
+    #input:
+        #bam = rules.WASPfilter.output.bam,
+        #bai = rules.WASPfilter.output.bai
+    #output:
+        #bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam',
+        #bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam.bai'
+    #params:
+        #picardVersion = config['picardVersion']
+    #log:
+        #err1 = 'output/logs/addReadGroups_{group}.err',
+        #err2 = 'outptu/logs/addReadGroups_{group}_index.err'
+    #shell:
+        #"""
+        #module load picard/{params.picardVersion}
+        #module load samtools
 
         # Parse group for donor name to add to read group
-        IFS="_" read -r -a array <<< {wildcards.group}
-        donor=${{array[1]}}
+        #IFS="_" read -r -a array <<< {wildcards.group}
+        #donor=${{array[1]}}
 
-        picard AddOrReplaceReadGroups -I {input.bam} -O {output.bam} --RGSM ${{donor}} --RGPL ILLUMINA --RGLB lib1 --RGPU unit1 2> {log.err1}
+        #picard AddOrReplaceReadGroups -I {input.bam} -O {output.bam} --RGSM ${{donor}} --RGPL ILLUMINA --RGLB lib1 --RGPU unit1 2> {log.err1}
         # Index
-        samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err2}
-        """
+        #samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err2}
+        #"""
 
-rule verifybamid:
-    input:
-        vcf = rules.filterVCFvariants.output.vcf,
-        bam = rules.addReadGroups.output.bam,
-        bai = rules.addReadGroups.output.bai
-    output:
-        'output/qc/{group}_verifybamid.selfSM',
-        'output/qc/{group}_verifybamid.selfRG',
-        'output/qc/{group}_verifybamid.bestRG',
-        'output/qc/{group}_verifybamid.bestSM',
-        'output/qc/{group}_verifybamid.depthRG',
-        'output/qc/{group}_verifybamid.depthSM'
-    params:
-        verifybamid = config['verifybamid']
-    log:
-        err = 'output/logs/verifybamid_{group}.err'
-    shell:
-        """
-        {params.verifybamid} --vcf {input.vcf} --bam {input.bam} --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
-        """
+#rule verifybamid:
+    #input:
+        #vcf = rules.filterVCFvariants.output.vcf,
+        #bam = rules.addReadGroups.output.bam,
+        #bai = rules.addReadGroups.output.bai
+    #output:
+        #'output/qc/{group}_verifybamid.selfSM',
+        #'output/qc/{group}_verifybamid.selfRG',
+        #'output/qc/{group}_verifybamid.bestRG',
+        #'output/qc/{group}_verifybamid.bestSM',
+        #'output/qc/{group}_verifybamid.depthRG',
+        #'output/qc/{group}_verifybamid.depthSM'
+    #params:
+        #verifybamid = config['verifybamid']
+    #log:
+        #err = 'output/logs/verifybamid_{group}.err'
+    #shell:
+        #"""
+        #{params.verifybamid} --vcf {input.vcf} --bam {input.bam} --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
+        #"""
 
 ## Add rule to relabel any sample swaps
 

@@ -71,7 +71,7 @@ rule updateConfig:
         v = rules.zipVCF1.output,
         i = rules.indexVCF1.output
     output:
-        v = 'output/vcf/' + vcf_prefix + '_newcontig.vcf.gz',
+        v = 'output/vcf/' + vcf_prefix + '_newcontig.vcf',
         i = 'output/vcf/' + vcf_prefix + '_newcontig.vcf.gz.tbi'
     threads: 1
     log:
@@ -82,5 +82,6 @@ rule updateConfig:
     shell:
         """
         module load gatk/4.1.7.0
-        gatk UpdateVCFSequenceDictionary -V {input.v} --source-dictionary {params.sequence} --output {output.v} --replace=true 2> {log.err} 1> {log.out}
+        gatk UpdateVCFSequenceDictionary -V {input.v} --source-dictionary {params.sequence} --output {output.v}.gz --replace=true 2> {log.err} 1> {log.out}
+        gunzip {output.v}.gz
         """
