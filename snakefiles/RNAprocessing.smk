@@ -50,10 +50,10 @@ rule trim:
         R1 = lambda wildcards: ['output/{group}/fastq/{group}_R1.fastq.gz'.format(group=wildcards.group)],
         R2 = lambda wildcards: ['output/{group}/fastq/{group}_R2.fastq.gz'.format(group=wildcards.group)]
     output:
-        trim1 = temp("output/{group}/trim/{group}_R1_val_1.fq.gz"),
-        trim2 = temp("output/{group}/trim/{group}_R2_val_2.fq.gz"),
-        report1 = temp("output/{group}/trim/{group}_R1.fastq.gz_trimming_report.txt"),
-        report2 = temp("output/{group}/trim/{group}_R2.fastq.gz_trimming_report.txt")
+        trim1 = "output/{group}/trim/{group}_R1_val_1.fq.gz",
+        trim2 = "output/{group}/trim/{group}_R2_val_2.fq.gz",
+        report1 = "output/{group}/trim/{group}_R1.fastq.gz_trimming_report.txt",
+        report2 = "output/{group}/trim/{group}_R2.fastq.gz_trimming_report.txt"
     threads: 4
     params:
         version = config['trimgaloreVersion']

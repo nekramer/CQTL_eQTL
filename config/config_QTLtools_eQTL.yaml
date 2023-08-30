@@ -11,7 +11,7 @@ minHets: 5
 
 
 ## Genome-specific reference parameters
-chromNames: '../chromNames_hg38.txt' # 2-column text file. 1st column: format of chromosome names in vcf file, 2nd column: required format of chromosome names for compatibility with contigs
+chromNames: '/work/users/n/e/nekramer/References/hg38/chromNames_hg38.txt' # 2-column text file. 1st column: format of chromosome names in vcf file, 2nd column: required format of chromosome names for compatibility with contigs
 
 # GRCh38
 #genomeDir: '/proj/seq/data/STAR_genomes/GRCh38_p10_GENCODE' # Path to folder of STAR genome.
@@ -25,10 +25,10 @@ salmon: '/proj/seq/data/salmon_RNAseq_genomes/hg38_cdna/salmon_index/default' # 
 ## Software versions
 QTLToolsVersion: "1.3.1"
 salmonVersion: "1.4.0"
-gatkVersion: "4.2.5.0"
+gatkVersion: "4.4.0.0"
 vcftoolsVersion: "0.1.15"
-Rversion: "4.1.3"
-samtoolsVersion: "1.9"
+Rversion: "4.2.2"
+samtoolsVersion: "1.18"
 pythonVersion: "3.9.6"
 fastqcVersion: "0.11.9"
 trimgaloreVersion: "0.6.7"

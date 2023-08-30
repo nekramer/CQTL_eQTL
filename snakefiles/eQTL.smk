@@ -166,60 +166,86 @@ rule WASPfilter:
         samtools view {input.R} | grep 'vW:i:1' >> output/{wildcards.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam 2> {log.err1}
 
         # Compress and index
-        samtools view -bS output/{wildcard.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam > {output.bam} 2> {log.err2}
+        samtools view -bS output/{wildcards.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam > {output.bam} 2> {log.err2}
         samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err3}
         """
 
 # Add read groups to bam files, using donor name as group
-#rule addReadGroups:
-    #input:
-        #bam = rules.WASPfilter.output.bam,
-        #bai = rules.WASPfilter.output.bai
-    #output:
-        #bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam',
-        #bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam.bai'
-    #params:
-        #picardVersion = config['picardVersion']
-    #log:
-        #err1 = 'output/logs/addReadGroups_{group}.err',
-        #err2 = 'outptu/logs/addReadGroups_{group}_index.err'
-    #shell:
-        #"""
-        #module load picard/{params.picardVersion}
-        #module load samtools
+rule addReadGroups:
+    input:
+        bam = rules.WASPfilter.output.bam,
+        bai = rules.WASPfilter.output.bai
+    output:
+        bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam',
+        bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam.bai'
+    params:
+        picardVersion = config['picardVersion']
+    log:
+        err1 = 'output/logs/addReadGroups_{group}.err',
+        err2 = 'output/logs/addReadGroups_{group}_index.err'
+    shell:
+        """
+        module load picard/{params.picardVersion}
+        module load samtools
 
         # Parse group for donor name to add to read group
-        #IFS="_" read -r -a array <<< {wildcards.group}
-        #donor=${{array[1]}}
+        IFS="_" read -r -a array <<< {wildcards.group}
+        donor=${{array[1]}}
 
-        #picard AddOrReplaceReadGroups -I {input.bam} -O {output.bam} --RGSM ${{donor}} --RGPL ILLUMINA --RGLB lib1 --RGPU unit1 2> {log.err1}
+        picard AddOrReplaceReadGroups -I {input.bam} -O {output.bam} --RGSM ${{donor}} --RGPL ILLUMINA --RGLB lib1 --RGPU unit1 2> {log.err1}
         # Index
-        #samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err2}
-        #"""
+        samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err2}
+        """
 
-#rule verifybamid:
-    #input:
-        #vcf = rules.filterVCFvariants.output.vcf,
-        #bam = rules.addReadGroups.output.bam,
-        #bai = rules.addReadGroups.output.bai
-    #output:
-        #'output/qc/{group}_verifybamid.selfSM',
-        #'output/qc/{group}_verifybamid.selfRG',
-        #'output/qc/{group}_verifybamid.bestRG',
-        #'output/qc/{group}_verifybamid.bestSM',
-        #'output/qc/{group}_verifybamid.depthRG',
-        #'output/qc/{group}_verifybamid.depthSM'
-    #params:
-        #verifybamid = config['verifybamid']
-    #log:
-        #err = 'output/logs/verifybamid_{group}.err'
-    #shell:
-        #"""
-        #{params.verifybamid} --vcf {input.vcf} --bam {input.bam} --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
-        #"""
+rule verifybamid:
+    input:
+        vcf = rules.filterVCFvariants.output.vcf,
+        bam = rules.addReadGroups.output.bam,
+        bai = rules.addReadGroups.output.bai
+    output:
+        selfSM = 'output/qc/{group}_verifybamid.selfSM',
+        selfRG = 'output/qc/{group}_verifybamid.selfRG',
+        bestRG = 'output/qc/{group}_verifybamid.bestRG',
+        bestSM = 'output/qc/{group}_verifybamid.bestSM',
+        depthRG = 'output/qc/{group}_verifybamid.depthRG',
+        depthSM = 'output/qc/{group}_verifybamid.depthSM'
+    params:
+        verifybamid = config['verifybamid']
+    log:
+        err = 'output/logs/verifybamid_{group}.err'
+    shell:
+        """
+        {params.verifybamid} --vcf {input.vcf} --bam {input.bam} --best --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
+        """
 
 ## Add rule to relabel any sample swaps
+rule check_verifybamid: 
+    input:
+        selfSM = rules.verifybamid.output.selfSM,
+        bestSM = rules.verifybamid.output.bestSM
+    output:
+        'output/qc/{group}_verifybamid.check'
+    params:
+        Rversion = config['Rversion']
+    log:
+        err = 'output/logs/check_verifybamid_{group}.err'
+    shell:
+        """
+        module load r/{params.Rversion}
+        Rscript scripts/check_verifybamid.R {input.selfSM} {input.bestSM} {output} 2> {log.err}
+        """
 
+rule combine_verifybamid:
+    input: 
+        [expand("output/qc/{group}_verifybamid.check", group = key) for key in read1]
+    output:
+        'output/qc/verifybamid.final'
+    log:
+        err = 'output/logs/combine_verifybamid.err'
+    shell:
+        """
+        echo -e "self,condition,best,res" | cat - {input} > {output} 2> {log.err}
+        """
 
 rule quant:
     input:

@@ -38,4 +38,4 @@ generate_verifybamid_resourceFiles:
   memPerCpu: 32G
 
 verifybamid:
-  memPerCpu: 32G
+  memPerCpu: 64G
