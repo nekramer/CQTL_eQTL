@@ -8,6 +8,8 @@ suppressPackageStartupMessages(library("readr"))
 parser <- ArgumentParser()
 parser$add_argument('--subset', default = 'freeze', 
                     help = 'Character describing which subset to create samplesheet from. Options are "pilot", "freeze", "replicate", and "all".')
+parser$add_argument('--omit', default = 'NA',
+                    help = 'Donor name of samples to omit from samplesheet regardless of subset.')
 parser$add_argument('--output', default = "samplesheet.csv",
                     help = 'Output file path and name.')
 
@@ -118,5 +120,14 @@ if (args$subset != "replicate"){
 final_samplesheet <- new_samplesheet %>%
   dplyr::select(-Notes) %>%
   discard(~all(is.na(.x)))
+
+# Remove any donors specified by --omit
+if (args$omit != "NA"){
+  final_samplesheet <- final_samplesheet %>%
+    filter(!Donor %in% args$omit)
+}
+
+
+
 
 write_csv(final_samplesheet, file = args$output)

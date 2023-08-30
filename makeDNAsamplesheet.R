@@ -8,6 +8,8 @@ suppressPackageStartupMessages(library("readr"))
 parser <- ArgumentParser()
 parser$add_argument('--subset', default = 'freeze', 
                     help = 'Character describing which subset to get DNA extraction information from. Options are "pilot", "freeze", "replicate", and "all".')
+parser$add_argument('--omit', default = 'NA',
+                    help = 'Donor name of samples to omit from samplesheet regardless of subset.')
 parser$add_argument('--output', default = "dnaSamplesheet.csv",
                     help = 'Output file path and name.')
 
@@ -71,5 +73,12 @@ final_dnaSamplesheet <- new_dnaSamplesheet %>%
   discard(~all(is.na(.x))) %>%
   # Rename Batch column
   dplyr::rename("GenotypingBatch" = Batch)
+
+# Remove any donors specified by --omit
+if (args$omit != "NA"){
+  final_dnaSamplesheet <- final_dnaSamplesheet %>%
+    filter(!Donor %in% args$omit)
+}
+
 
 write_csv(final_dnaSamplesheet, file = args$output)

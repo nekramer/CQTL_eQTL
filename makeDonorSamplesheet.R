@@ -8,6 +8,8 @@ suppressPackageStartupMessages(library("readr"))
 parser <- ArgumentParser()
 parser$add_argument('--subset', default = 'freeze', 
                     help = 'Character describing which subset to get donor information from. Options are "pilot", "freeze", "replicate", and "all".')
+parser$add_argument('--omit', default = 'NA',
+                    help = 'Donor name of samples to omit from samplesheet regardless of subset.')
 parser$add_argument('--output', default = "donorSamplesheet.csv",
                     help = 'Output file path and name.')
 
@@ -70,4 +72,10 @@ final_donorSamplesheet <- new_donorSamplesheet %>%
   dplyr::select(-Notes, -`Notes for eliza`) %>%
   discard(~all(is.na(.x)))
  
+# Remove any donors specified by --omit
+if (args$omit != "NA"){
+  final_donorSamplesheet <- final_donorSamplesheet %>%
+    filter(!Donor %in% args$omit)
+}
+
 write_csv(final_donorSamplesheet, file = args$output)
