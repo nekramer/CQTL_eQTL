@@ -109,6 +109,22 @@ rule filterVCFvariants:
         bgzip output/vcf/{params.prefix}_qtl.recode.vcf && tabix -p vcf {output.vcf}
         """
 
+# bcftools stats on final VCF
+rule bcftools_stats:
+    input:
+        vcf = rules.filterVCFvariants.output.vcf,
+        index = rules.filterVCFvariants.output.index
+    output:
+        'output/qc/' + vcf_prefix + '_qtl_stats.txt'
+    params:
+        version = config['samtoolsVersion']
+    shell:
+        """
+        module load samtools/{params.version}
+        bcftools stats {input.vcf} > {output}
+        """
+
+# Align with WASP
 rule align:
     input:
         R1 = rules.trim.output.trim1,
@@ -218,39 +234,30 @@ rule verifybamid:
         {params.verifybamid} --vcf {input.vcf} --bam {input.bam} --best --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
         """
 
-## Add rule to relabel any sample swaps
-rule check_verifybamid: 
+# Convert filtered bams back to fastqs
+rule convertBams:
     input:
-        selfSM = rules.verifybamid.output.selfSM,
-        bestSM = rules.verifybamid.output.bestSM
+        bam = rules.addReadGroups.output.bam,
+        bai = rules.addReadGroups.output.bai
     output:
-        'output/qc/{group}_verifybamid.check'
+        R1 = 'output/{group}/align/{group}_WASP.RG_R1.fq',
+        R2 = 'output/{group}/align/{group}_WASP.RG_R2.fq'
     params:
-        Rversion = config['Rversion']
+        samtoolsVersion = config['samtoolsVersion']
     log:
-        err = 'output/logs/check_verifybamid_{group}.err'
+        out = 'output/logs/convertBams_{group}.out',
+        err = 'output/logs/convertBams_{group}.err'
     shell:
         """
-        module load r/{params.Rversion}
-        Rscript scripts/check_verifybamid.R {input.selfSM} {input.bestSM} {output} 2> {log.err}
+        module load samtools/{params.samtoolsVersion}
+        samtools bam2fq -1 {output.R1} -2 {output.R2} -n {input.bam} 1> {log.out} 2> {log.err}
         """
 
-rule combine_verifybamid:
-    input: 
-        [expand("output/qc/{group}_verifybamid.check", group = key) for key in read1]
-    output:
-        'output/qc/verifybamid.final'
-    log:
-        err = 'output/logs/combine_verifybamid.err'
-    shell:
-        """
-        echo -e "self,condition,best,res" | cat - {input} > {output} 2> {log.err}
-        """
-
+# Quant fastqcs with salmon
 rule quant:
     input:
-        trim1 = rules.trim.output.trim1,
-        trim2 = rules.trim.output.trim2
+        fq1 = rules.convertBams.output.R1,
+        fq2 = rules.convertBams.output.R2
     output:
         "output/quant/{group}/quant.sf"
     params:
@@ -262,9 +269,30 @@ rule quant:
     shell:
         """
         module load salmon/{params.version}
-        salmon quant --writeUnmappedNames -l A -1 {input.trim1} -2 {input.trim2} -i {params.index} -o output/quant/{wildcards.group} --threads 1 1> {log.out} 2> {log.err}
+        salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group} --threads 2 1> {log.out} 2> {log.err}
         """
 
+rule multiqc:
+    input:
+        [expand('output/qc/{group}_{R}_fastqc.zip', group = key, R = ['R1', 'R2']) for key in read1],
+        [expand('output/{group}/trim/{group}_{R}.fastq.gz_trimming_report.txt', group = key, R =['R1', 'R2']) for key in read1],
+        [expand('output/{group}/align/{group}.Log.final.out', group = key) for key in read1],
+        [expand('output/quant/{group}/quant.sf', group = key) for key in read1],
+        [expand('output/qc/{group}_verifybamid.selfSM', group = key) for key in read1],
+        rules.bcftools_stats.output
+    output:
+        'output/qc/multiqc_report.html'
+    params:
+        version = config['multiqcVersion']
+    log:
+        out = 'output/logs/multiqc.out',
+        err = 'output/logs/multiqc.err'
+    shell:
+        """
+        module load multiqc/{params.version}
+        multiqc -f -o output/qc . 1> {log.out} 2> {log.err}
+        """
+    
 rule quantNorm:
     input:
         [expand("output/quant/{group}/quant.sf", group = key) for key in read1]

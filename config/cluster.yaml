@@ -34,8 +34,8 @@ PEER_nominal_eQTL:
 PEER_qtlPostProcessing:
   memPerCpu: 16G
 
-generate_verifybamid_resourceFiles:
-  memPerCpu: 32G
 
 verifybamid:
   memPerCpu: 64G
+multiqc:
+  memPerCpu: 8G

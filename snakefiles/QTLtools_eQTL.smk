@@ -37,7 +37,8 @@ vcf_prefix = vcf_file[:re.search("_ALL_qc.vcf.gz", vcf_file).span()[0]]
 ## Number of PEER factors
 Nk = config['PEERfactors']
 
-rule_all_inputs = ['output/qc/verifybamid.final',
+rule_all_inputs = ['output/qc/multiqc_report.html',
+                [expand('output/quant/{group}/quant.sf', group = key) for key in read1],
                     [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz', condition = ['ALL', 'CTL', 'FNF'])],
                     [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz.tbi', condition = ['ALL', 'CTL', 'FNF'])],
                     [expand('output/covar/{condition}_PEERfactors_k{Nk}.txt', condition = ['CTL', 'FNF'], Nk = Nk)],
@@ -246,3 +247,5 @@ rule PEER_multipleTesting_perm:
         module load r/{params.version}
         Rscript scripts/correctQTLs.R {input.qtlResult} {input.geneInfo} {output} 1> {log.out} 2> {log.err}
         """
+
+# Implement conditional pass?
