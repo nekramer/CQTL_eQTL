@@ -9,11 +9,13 @@ parser <- ArgumentParser()
 parser$add_argument('--subset', default = 'freeze', 
                     help = 'Character describing which subset to get DNA extraction information from. Options are "pilot", "freeze", "replicate", and "all".')
 parser$add_argument('--omit', default = 'NA',
-                    help = 'Donor name of samples to omit from samplesheet regardless of subset.')
+                    help = 'Comma-separated list of donor name of samples to omit from samplesheet regardless of subset.')
 parser$add_argument('--output', default = "dnaSamplesheet.csv",
                     help = 'Output file path and name.')
 
 args <- parser$parse_args()
+
+args$omit <- strsplit(args$omit, ",")[[1]]
 
 # Read in DNAExtractionsLibraries sheet
 gs4_auth("nekramer27@gmail.com")
@@ -75,7 +77,7 @@ final_dnaSamplesheet <- new_dnaSamplesheet %>%
   dplyr::rename("GenotypingBatch" = Batch)
 
 # Remove any donors specified by --omit
-if (args$omit != "NA"){
+if (length(args$omit) > 0){
   final_dnaSamplesheet <- final_dnaSamplesheet %>%
     filter(!Donor %in% args$omit)
 }

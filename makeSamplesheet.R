@@ -9,11 +9,13 @@ parser <- ArgumentParser()
 parser$add_argument('--subset', default = 'freeze', 
                     help = 'Character describing which subset to create samplesheet from. Options are "pilot", "freeze", "replicate", and "all".')
 parser$add_argument('--omit', default = 'NA',
-                    help = 'Donor name of samples to omit from samplesheet regardless of subset.')
+                    help = 'Comma-separated list of donor name of samples to omit from samplesheet regardless of subset.')
 parser$add_argument('--output', default = "samplesheet.csv",
                     help = 'Output file path and name.')
 
 args <- parser$parse_args()
+
+args$omit <- strsplit(args$omit, ",")[[1]]
 
 # Read in RNAExtractionsLibraries sheet
 gs4_auth("nekramer27@gmail.com")
@@ -122,12 +124,9 @@ final_samplesheet <- new_samplesheet %>%
   discard(~all(is.na(.x)))
 
 # Remove any donors specified by --omit
-if (args$omit != "NA"){
+if (length(args$omit) > 0){
   final_samplesheet <- final_samplesheet %>%
     filter(!Donor %in% args$omit)
 }
-
-
-
 
 write_csv(final_samplesheet, file = args$output)
