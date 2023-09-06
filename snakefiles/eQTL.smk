@@ -131,7 +131,8 @@ rule align:
         R2 = rules.trim.output.trim2,
         vcf = rules.filterVCFvariants.output.vcf
     output:
-        bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.out.bam'
+        bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.out.bam',
+        log = 'output/{group}/align/{group}.Log.final.out'
     threads: 8
     log:
         out = "output/logs/align_{group}.out",
@@ -262,14 +263,25 @@ rule quant:
         "output/quant/{group}/quant.sf"
     params:
         version = config['salmonVersion'],
-        index = config['salmon']
+        index = config['salmon'],
+        gcFlag = config['gcBias'],
+        seqFlag = config['seqBias']
     log:
         out = 'output/logs/quant_{group}.out',
         err = 'output/logs/quant_{group}.err'
     shell:
         """
         module load salmon/{params.version}
-        salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group} --threads 2 1> {log.out} 2> {log.err}
+
+        if [ {params.gcFlag} == "TRUE" ] && [ {params.seqFlag} == "TRUE" ]; then
+            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group} --threads 2 --seqBias --gcBias 1> {log.out} 2> {log.err}
+        elif [ {params.gcFlag} == "TRUE" ] && [ {params.seqFlag} != "TRUE" ]; then
+            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group} --threads 2 --gcBias 1> {log.out} 2> {log.err}
+        elif [ {params.gcFlag} != "TRUE"] && [ {params.seqFlag} == "TRUE" ]; then
+            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group} --threads 2 --seqBias 1> {log.out} 2> {log.err}
+        else
+            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group} --threads 2 1> {log.out} 2> {log.err}
+        fi
         """
 
 rule multiqc:
