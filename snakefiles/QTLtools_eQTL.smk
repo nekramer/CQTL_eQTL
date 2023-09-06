@@ -38,7 +38,6 @@ vcf_prefix = vcf_file[:re.search("_ALL_qc.vcf.gz", vcf_file).span()[0]]
 Nk = config['PEERfactors']
 
 rule_all_inputs = ['output/qc/multiqc_report.html',
-                [expand('output/quant/{group}/quant.sf', group = key) for key in read1],
                     [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz', condition = ['ALL', 'CTL', 'FNF'])],
                     [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz.tbi', condition = ['ALL', 'CTL', 'FNF'])],
                     [expand('output/covar/{condition}_PEERfactors_k{Nk}.txt', condition = ['CTL', 'FNF'], Nk = Nk)],
@@ -48,101 +47,57 @@ rule_all_inputs = ['output/qc/multiqc_report.html',
 include: 'genoCovariate.smk'
 batches = ['RNAKitBatch', 'RNASequencingBatch', 'genoBatch', 'DNAKitBatch']
 
-
 if config['iteratePEER'] == 'TRUE':
-    peerCov = 'output/covar/{condition}_PEER_k{Nk}_genoPC'
-    peerQTL_perm = 'output/qtl/{condition}_PEER_k{Nk}_genoPC'
-    peerQTL_nominal = 'output/qtl/{condition}_PEER_k{Nk}_genoPC'
-    nomThreshold = 'output/qtl/{condition}_PEER_k{Nk}_genoPC'
-    nomFinal = 'output/qtl/{condition}_PEER_k{Nk}_genoPC'
-    peerMultipleTesting_perm = 'output/qtl/{condition}_PEER_k{Nk}_genoPC'
-
-    PEER_eQTL_out = 'output/logs/{condition}_PEERk{Nk}_genoPC'
-    PEER_eQTL_err = 'output/logs/{condition}_PEERk{Nk}_genoPC'
-    PEER_nominal_eQTL_out = 'output/logs/{condition}_PEERk{Nk}_genoPC'
-    PEER_nominal_eQTL_err = 'output/logs/{condition}_PEERk{Nk}_genoPC'
-    get_nomThreshold_out = 'output/logs/{condition}_PEERk{Nk}_genoPC'
-    get_nomThreshold_err = 'output/logs/{condition}_PEERk{Nk}_genoPC'
-    nomFilter_out = 'output/logs/{condition}_PEERk{Nk}_genoPC'
-    nomFilter_err = 'output/logs/{condition}_PEERk{Nk}_genoPC'
-    PEER_multipleTesting_perm_out = 'output/logs/{condition}_PEERk{Nk}_genoPC'
-    PEER_multipleTesting_perm_err = 'output/logs/{condition}_PEERk{Nk}_genoPC'
-
+    filePrefix = '{condition}_PEER_k{Nk}_genoPC'
 else:
-    peerCov = 'output/covar/{condition}_PEER_kneedle_genoPC'
-    peerQTL_perm = 'output/qtl/{condition}_PEER_kneedle_genoPC'
-    peerQTL_nominal = 'output/qtl/{condition}_PEER_kneedle_genoPC'
-    nomThreshold = 'output/qtl/{condition}_PEER_kneedle_genoPC'
-    nomFinal = 'output/qtl/{condition}_PEER_kneedle_genoPC'
-    peerMultipleTesting_perm = 'output/qtl/{condition}_PEER_kneedle_genoPC'
-
-    PEER_eQTL_out = 'output/logs/{condition}_PEERkneedle_eQTL.out'
-    PEER_eQTL_err = 'output/logs/{condition}_PEERkneedle_eQTL.err'
-    PEER_nominal_eQTL_out = 'output/logs/{condition}_PEERkneedle_genoPC'
-    PEER_nominal_eQTL_err = 'output/logs/{condition}_PEERkneedle_genoPC'
-    get_nomThreshold_out = 'output/logs/{condition}_PEERkneedle_genoPC'
-    get_nomThreshold_err = 'output/logs/{condition}_PEERkneedle_genoPC'
-    nomFilter_out = 'output/logs/{condition}_PEERkneedle_genoPC'
-    nomFilter_err = 'output/logs/{condition}_PEERkneedle_genoPC'
-    PEER_multipleTesting_perm_out = 'output/logs/{condition}_PEERkneedle_genoPC'
-    PEER_multipleTesting_perm_err = 'output/logs/{condition}_PEERkneedle_genoPC'
-
+    filePrefix = '{condition}_PEER_kneedle_genoPC'
 
 for b in batches:
     b_include = config[b]
     if b_include == "TRUE":
+        filePrefix += '_{}'.format(b)
 
-        peerCov += '_{}'.format(b)
-        peerQTL_perm += '_{}'.format(b)
-        peerQTL_nominal += '_{}'.format(b)
-        nomThreshold += '_{}'.format(b)
-        nomFinal += '_{}'.format(b)
-        peerMultipleTesting_perm += '_{}'.format(b)
+# Final files
+peerCov = 'output/covar/' + filePrefix + '.txt'
+peerQTL_perm = 'output/qtl/' + filePrefix + '_perm1Mb.txt'
+peerQTL_nominal = 'output/qtl' + filePrefix + '_nom1Mb.txt'
+nomThreshold = 'output/qtl/' + filePrefix + '_nom1Mb_thresholds.csv'
+nomFilter = 'output/qtl/' + filePrefix + '_nom1Mb_filter.txt'
+nom_rsid = 'output/qtl/' + filePrefix + '_nom1Mb_final_rsids.txt'
+peerMultipleTestingFinal = 'output/qtl/' + filePrefix + '_perm1Mb_FDR.txt'
+peerMultipleTesting_rsid = 'output/qtl/' + filePrefix + '_perm1Mb_FDR_rsids.txt'
 
-        PEER_eQTL_out += '_{}'.format(b)
-        PEER_eQTL_err += '_{}'.format(b)
-        PEER_nominal_eQTL_out += '_{}'.format(b)
-        PEER_nominal_eQTL_err += '_{}'.format(b)
-        get_nomThreshold_out += '_{}'.format(b)
-        get_nomThreshold_err += '_{}'.format(b)
-        nomFilter_out += '_{}'.format(b)
-        nomFilter_err += '_{}'.format(b)
-        PEER_multipleTesting_perm_out += '_{}'.format(b)
-        PEER_multipleTesting_perm_err += '_{}'.format(b)
-
-peerCov += ".txt"
-peerQTL_perm += "_perm1Mb.txt"
-peerQTL_nominal += "_nom1Mb.txt"
-nomThreshold += "_nom1Mb_thresholds.csv"
-nomFinal += "_nom1Mb_final.txt"
-peerMultipleTesting_perm += "_perm1Mb_FDR.txt"
-
-PEER_eQTL_out += "_eQTL.out"
-PEER_eQTL_err += "_eQTL.err"
-PEER_nominal_eQTL_out += "_nominal_eQTL.out"
-PEER_nominal_eQTL_err += "_nominal_eQTL.err"
-get_nomThreshold_out += "_nomThreshold.out"
-get_nomThreshold_err += "_nomThreshold.err"
-nomFilter_out += '_nomFilter.out'
-nomFilter_err += '_nomFilter.err'
-PEER_multipleTesting_perm_out += "_eQTL_multipleTesting_perm.out"
-PEER_multipleTesting_perm_err += "_eQTL_multipleTesting_perm.err"
+# Log files
+PEER_eQTL_out = 'output/logs/' + filePrefix + '_eQTL.out'
+PEER_eQTL_err = 'output/logs/' + filePrefix + '_eQTL.err'
+PEER_nominal_eQTL_out = 'output/logs/' + filePrefix + '_nominal_eQTL.out'
+PEER_nominal_eQTL_err = 'output/logs/' + filePrefix + '_nominal_eQTL.err'
+get_nomThreshold_out = 'output/logs/' + filePrefix + '_nomThreshold.out'
+get_nomThreshold_err = 'output/logs/' + filePrefix + '_nomThreshold.err'
+nomFilter_out = 'output/logs/' + filePrefix + '_nomFilter.out'
+nomFilter_err = 'output/logs/' + filePrefix + '_nomFilter.err'
+nom_rsid_out = 'output/logs/' + filePrefix + '_nom_rsid.out'
+nom_rsid_err = 'output/logs/' + filePrefix + '_nom_rsid.err'
+PEER_multipleTesting_perm_out_final = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm.out'
+PEER_multipleTesting_perm_err_final = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm.err'
+PEER_multipleTesting_perm_rsid_out = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_rsid.out'
+PEER_multipleTesting_perm_rsid_err = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_rsid.err'
 
 
 if config['iteratePEER'] == 'TRUE':
-    rule_all_inputs.extend([[expand(peerCov, condition = ['CTL', 'FNF'], Nk = n) for n in range(5, Nk + 1, config['iterateBy'])]])
-    rule_all_inputs.extend([[expand(peerQTL_perm, condition = ['CTL', 'FNF'], Nk = n) for n in range(5, Nk + 1, config['iterateBy'])]])
-    rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'], Nk = n) for n in range(5, Nk + 1, config['iterateBy'])]])
-    rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'], Nk = n) for n in range(5, Nk + 1, config['iterateBy'])]])
-    rule_all_inputs.extend([[expand(nomFinal, condition = ['CTL', 'FNF'], Nk = n) for n in range(5, Nk + 1, config['iterateBy'])]])
-    rule_all_inputs.extend([[expand(peerMultipleTesting_perm, condition = ['CTL', 'FNF'], Nk = n) for n in range(5, Nk + 1, config['iterateBy'])]])
+    rule_all_inputs.extend([[expand(peerCov, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
+    rule_all_inputs.extend([[expand(peerQTL_perm, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
+    rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
+    rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
+    rule_all_inputs.extend([[expand(nom_rsid, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
+    rule_all_inputs.extend([[expand(peerMultipleTesting_rsid, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
 else:
     rule_all_inputs.extend([[expand(peerCov, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(peerQTL_perm, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'])]])
-    rule_all_inputs.extend([[expand(nomFinal, condition = ['CTL', 'FNF'])]])
-    rule_all_inputs.extend([[expand(peerMultipleTesting_perm, condition = ['CTL', 'FNF'])]])
+    rule_all_inputs.extend([[expand(nom_rsid, condition = ['CTL', 'FNF'])]])
+    rule_all_inputs.extend([[expand(peerMultipleTesting_rsid, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand('output/covar/{condition}_PEERkneedle.txt', condition = ['CTL', 'FNF'])]])
 
 ## Define rules
@@ -218,7 +173,7 @@ rule nominal_Filter:
         nomData = rules.PEER_nominal_eQTL.output,
         nomThreshold = rules.get_nomThreshold.output
     output:
-        nomFinal
+        nomFilter
     params:
         version = config['pythonVersion']
     log:
@@ -236,16 +191,56 @@ rule PEER_multipleTesting_perm:
         qtlResult = peerQTL_perm,
         geneInfo = rules.indexQuant.output.bed
     output:
-        peerMultipleTesting_perm
+        peerMultipleTestingFinal 
     params:
         version = config['Rversion']
     log:
-        out = PEER_multipleTesting_perm_out,
-        err = PEER_multipleTesting_perm_err,
+        out = PEER_multipleTesting_perm_out_final,
+        err = PEER_multipleTesting_perm_err_final,
     shell:
         """
         module load r/{params.version}
         Rscript scripts/correctQTLs.R {input.qtlResult} {input.geneInfo} {output} 1> {log.out} 2> {log.err}
         """
+
+# Convert perm SNP positions to rsIDs
+rule convert_perm_rsids:
+    input:
+        rules.PEER_multipleTesting_perm.output
+    output:
+        peerMultipleTesting_rsid
+    params:
+        version = config['pythonVersion'],
+        dbSNP_dir = config['dbSNP_dir'],
+        dbSNP_prefix = config['dbSNP_prefix']
+    log:
+        out = PEER_multipleTesting_perm_rsid_out,
+        err = PEER_multipleTesting_perm_rsid_err
+    shell:
+        """
+        module load python/{params.version}
+        python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {output} 1> {log.out} 2> {log.err}
+        """
+
+# Convert nominal SNP position to rsIDs
+rule convert_nominal_rsids:
+    input:
+        rules.nominal_Filter.output
+    output:
+        nom_rsid
+    params:
+        version = config['pythonVersion'],
+        dbSNP_dir = config['dbSNP_dir'],
+        dbSNP_prefix = config['dbSNP_prefix']
+    log:
+        out = nom_rsid_out,
+        err = nom_rsid_err
+    shell:
+        """
+        module load python/{params.version}
+        python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {output} 1> {log.out} 2> {log.err}
+        """
+
+
 
 # Implement conditional pass?
