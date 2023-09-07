@@ -11,8 +11,8 @@ elif filterType == 'count':
 
 
 if config['iteratePEER'] == 'TRUE':
-    factors = [expand('output/covar/{{condition}}_PEERfactors_k{Nk}.txt', Nk = n) for n in range(5, Nk + 1, config['iterateBy'])],
-    var = [expand('output/covar/{{condition}}_PEERfactors_k{Nk}_variance.txt', Nk = n) for n in range(5, Nk + 1, config['iterateBy'])]
+    factors = [expand('output/covar/{{condition}}_PEERfactors_k{Nk}.txt', Nk = n) for n in range(1, Nk + 1, config['iterateBy'])],
+    var = [expand('output/covar/{{condition}}_PEERfactors_k{Nk}_variance.txt', Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]
 else:
     include: "../rules/PEER_kneedle.smk"
     factors = [expand('output/covar/{{condition}}_PEERfactors_k{Nk}.txt', Nk = Nk)],
@@ -305,7 +305,7 @@ rule multiqc:
         multiqc -f -o output/qc . 1> {log.out} 2> {log.err}
         """
     
-rule quantNorm:
+rule quantNorm_Condition:
     input:
         [expand("output/quant/{group}/quant.sf", group = key) for key in read1]
     output:
@@ -322,7 +322,24 @@ rule quantNorm:
         Rscript scripts/quantNorm.R {params.samplesheet} {wildcards.condition} {input} 1> {log.out} 2> {log.err}
         """
 
-rule indexQuant:
+rule quantNorm_All:
+    input:
+        [expand("output/quant/{group}/quant.sf", group = key) for key in read1]
+    output:
+        "output/normquant/ALL_CPMadjTMM_invNorm.bed"
+    params:
+        version = config['Rversion'],
+        samplesheet = config['samplesheet']
+    log:
+        out = 'output/logs/ALL_quantNorm.out',
+        err = 'output/logs/ALL_quantNorm.err'
+    shell:
+        """
+        module load r/{params.version}
+        Rscript scripts/quantNorm.R {params.samplesheet} ALL {input} 1> {log.out} 2> {log.err}
+        """
+
+rule indexQuant_Condition:
     input:
         lambda wildcards: ['output/normquant/{condition}_CPMadjTMM_invNorm.bed'.format(condition=wildcards.condition)]
     output:
@@ -333,6 +350,23 @@ rule indexQuant:
     log:
         out = 'output/logs/{condition}_indexQuant.out',
         err = 'output/logs/{condition}_indexQuant.err'
+    shell:
+        """
+        module load samtools/{params.version}
+        bgzip {input} && tabix -p bed {output.bed} 1> {log.out} 2> {log.err}
+        """
+
+rule indexQuant_All:
+    input:
+        rules.quantNorm_All.output
+    output:
+        bed = 'output/normquant/ALL_CPMadjTMM_invNorm.bed.gz',
+        index = 'output/normquant/ALL_CPMadjTMM_invNorm.bed.gz.tbi'
+    params:
+         version = config['samtoolsVersion']
+    log:
+        out = 'output/logs/ALL_indexQuant.out',
+        err = 'output/logs/ALL_indexQuant.err'
     shell:
         """
         module load samtools/{params.version}

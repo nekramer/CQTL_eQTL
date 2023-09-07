@@ -3,6 +3,7 @@ import pandas as pd
 import os, shutil
 import re
 import glob
+import yaml
 import numpy as np
 from kneed import KneeLocator
 import os.path
@@ -38,6 +39,7 @@ vcf_prefix = vcf_file[:re.search("_ALL_qc.vcf.gz", vcf_file).span()[0]]
 Nk = config['PEERfactors']
 
 rule_all_inputs = ['output/qc/multiqc_report.html',
+                    'config/config_reQTL_final.yaml',
                     [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz', condition = ['ALL', 'CTL', 'FNF'])],
                     [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz.tbi', condition = ['ALL', 'CTL', 'FNF'])],
                     [expand('output/covar/{condition}_PEERfactors_k{Nk}.txt', condition = ['CTL', 'FNF'], Nk = Nk)],
@@ -112,8 +114,8 @@ rule PEER_eQTL:
     input:
         vcf = rules.filterVCFvariants.output.vcf,
         vcfIndex = rules.filterVCFvariants.output.index,
-        bed = rules.indexQuant.output.bed,
-        bedIndex = rules.indexQuant.output.index,
+        bed = rules.indexQuant_Condition.output.bed,
+        bedIndex = rules.indexQuant_Condition.output.index,
         cov = peerCov
     output:
         peerQTL_perm
@@ -133,8 +135,8 @@ rule PEER_nominal_eQTL:
     input:
         vcf = rules.filterVCFvariants.output.vcf,
         vcfIndex = rules.filterVCFvariants.output.index,
-        bed = rules.indexQuant.output.bed,
-        bedIndex = rules.indexQuant.output.index,
+        bed = rules.indexQuant_Condition.output.bed,
+        bedIndex = rules.indexQuant_Condition.output.index,
         cov = peerCov
     output:
         peerQTL_nominal
@@ -189,7 +191,7 @@ rule nominal_Filter:
 rule PEER_multipleTesting_perm:
     input:
         qtlResult = peerQTL_perm,
-        geneInfo = rules.indexQuant.output.bed
+        geneInfo = rules.indexQuant_Condition.output.bed
     output:
         peerMultipleTestingFinal 
     params:
@@ -241,6 +243,37 @@ rule convert_nominal_rsids:
         python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {output} 1> {log.out} 2> {log.err}
         """
 
+# Populate config file for response QTL workflow
+rule update_reQTL:
+    input:
+        vcf = rules.filterVCFvariants.output.vcf,
+        rna = rules.indexQuant_All.output.bed,
+        genoPC = rules.genoPCA.output.pcs,
+        genoPCkneedle = rules.genoPCkneedle.output
+    output:
+        'config/config_reQTL_final.yaml'
+    log:
+        out = 'output/logs/update_reQTL.out',
+        err = 'output/logs/update_reQTL.err'
+    run:
+        # Open original config file to get values for RNAKitBatch, RNASequencingBatch, genoBatch, DNAKitBatch
+        with open(configfile, 'r') as f:
+            config = yaml.safe_load(f)
+ 
+        with open('config/config_reQTL.yaml', 'r') as f:
+            reqtl_config = yaml.safe_load(f)
+        reqtl_config['eQTL_dir'] = 'output/qtl/'
+        reqtl_config['vcf'] = input.vcf
+        reqtl_config['rna'] = input.rna
+        reqtl_config['genoPC'] = input.genoPC
+        reqtl_config['genoPCkneedle'] = input.genoPCkneedle
+        reqtl_config['RNAKitBatch'] = config['RNAKitBatch']
+        reqtl_config['RNASequencingBatch'] = config['RNASequencingBatch']
+        reqtl_config['genoBatch'] = config['genoBatch']
+        reqtl_config['DNAKitBatch'] = config['DNAKitBatch']
 
+        # Write to new updated config info
+        with open('config/config_reQTL_final.yaml', 'w') as f:
+            yaml.dump(reqtl_config, f)
 
 # Implement conditional pass?
