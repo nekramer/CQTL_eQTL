@@ -377,17 +377,17 @@ rule getPEER:
     input:
         lambda wildcards: ['output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz'.format(condition=wildcards.condition)]
     output:
-        factors = factors,
-        var = var
+        factors = 'output/covar/{condition}_PEERfactors_k{Nk}.txt',
+        var = 'output/covar/{condition}_PEERfactors_k{Nk}_variance.txt'
     params:
         Nk = config['PEERfactors'],
         iteratePEER = config['iteratePEER'],
         iterateBy = config['iterateBy']
     log:
-        out = 'output/logs/{condition}_getPEER.out',
-        err = 'output/logs/{condition}_getPEER.err'
+        out = 'output/logs/{condition}_{Nk}_getPEER.out',
+        err = 'output/logs/{condition}_{Nk}_getPEER.err'
     shell:
         """
-        module load r/4.2.0
-        Rscript scripts/PEERfactors.R {input} {wildcards.condition} {params.Nk} {params.iteratePEER} {params.iterateBy} 1> {log.out} 2> {log.err}
+        module load r/4.2.2
+        Rscript scripts/PEERfactors.R {input} {wildcards.condition} {wildcards.Nk} FALSE {params.iterateBy} 1> {log.out} 2> {log.err}
         """

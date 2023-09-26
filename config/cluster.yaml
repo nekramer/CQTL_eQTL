@@ -23,16 +23,12 @@ trim:
 
 genoPCA:
   memPerCpu: 16G
-getPEER:
-  constraint: rhel7
-getPEER_ALL:
-  constraint: rhel7
 PEER_eQTL:
   memPerCpu: 8G
 PEER_nominal_eQTL:
   memPerCpu: 8G
-PEER_qtlPostProcessing:
-  memPerCpu: 16G
+convert_perm_rsids:
+  memPerCpu: 8G
 
 
 verifybamid:

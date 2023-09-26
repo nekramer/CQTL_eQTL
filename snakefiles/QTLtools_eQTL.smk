@@ -62,7 +62,7 @@ for b in batches:
 # Final files
 peerCov = 'output/covar/' + filePrefix + '.txt'
 peerQTL_perm = 'output/qtl/' + filePrefix + '_perm1Mb.txt'
-peerQTL_nominal = 'output/qtl' + filePrefix + '_nom1Mb.txt'
+peerQTL_nominal = 'output/qtl/' + filePrefix + '_nom1Mb.txt'
 nomThreshold = 'output/qtl/' + filePrefix + '_nom1Mb_thresholds.csv'
 nomFilter = 'output/qtl/' + filePrefix + '_nom1Mb_filter.txt'
 nom_rsid = 'output/qtl/' + filePrefix + '_nom1Mb_final_rsids.txt'
@@ -205,6 +205,8 @@ rule PEER_multipleTesting_perm:
         Rscript scripts/correctQTLs.R {input.qtlResult} {input.geneInfo} {output} 1> {log.out} 2> {log.err}
         """
 
+# Get LD buddies for significant lead variants
+
 # Convert perm SNP positions to rsIDs
 rule convert_perm_rsids:
     input:
@@ -257,16 +259,21 @@ rule update_reQTL:
         err = 'output/logs/update_reQTL.err'
     run:
         # Open original config file to get values for RNAKitBatch, RNASequencingBatch, genoBatch, DNAKitBatch
-        with open(configfile, 'r') as f:
+        with open('config/config_QTLtools_eQTL.yaml', 'r') as f:
             config = yaml.safe_load(f)
- 
+
+        # Open genoPCkneedle file to get number of geno PCs
+        with open('output/covar/genoPCkneedle.txt', 'r') as f:
+            genoPCkneedle = int(f.readlines()[0])
+
+
         with open('config/config_reQTL.yaml', 'r') as f:
             reqtl_config = yaml.safe_load(f)
         reqtl_config['eQTL_dir'] = 'output/qtl/'
         reqtl_config['vcf'] = input.vcf
         reqtl_config['rna'] = input.rna
         reqtl_config['genoPC'] = input.genoPC
-        reqtl_config['genoPCkneedle'] = input.genoPCkneedle
+        reqtl_config['genoPCkneedle'] = genoPCkneedle
         reqtl_config['RNAKitBatch'] = config['RNAKitBatch']
         reqtl_config['RNASequencingBatch'] = config['RNASequencingBatch']
         reqtl_config['genoBatch'] = config['genoBatch']

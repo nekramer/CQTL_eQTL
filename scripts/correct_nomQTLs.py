@@ -22,4 +22,4 @@ with open(sys.argv[3], "a+") as output:
             nom_pval = float(qtldata[11])
             if nom_pval <= pval_threshold:
               new_line = line.rstrip() + " " + str(pval_threshold)
-                output.write(new_line)
+              output.write(new_line)
