@@ -62,8 +62,15 @@ if (args$subset == "freeze"){
     filter(Donor %in% pilot & GENOTYPEQC == "PASS")
   
 } else if (args$subset == "all"){
-  new_dnaSamplesheet <- dnaSamplesheet %>% 
-    filter(GENOTYPEQC == "PASS")
+  
+  # Grab donors that also have valid RNA
+  donors <- samplesheet |>
+    filter(NYGCQC == "PASS" & !is.na(Sequencing_Directory)) |>
+    pull(Donor) |> 
+    unique()
+    
+  new_dnaSamplesheet <- dnaSamplesheet |>
+    filter(Donor %in% donors & GENOTYPEQC == "PASS")
 } else {
   
   stop("Invalid subset option.")
