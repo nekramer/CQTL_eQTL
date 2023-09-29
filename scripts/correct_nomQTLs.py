@@ -9,7 +9,7 @@ nom_thresholds = pd.read_csv(sys.argv[2])
 
 with open(sys.argv[3], "a+") as output:
   # Write header
-    output.write('gene_id gene_chr gene_start gene_end gene_strand num_cis_variants dist variantID variant_chr variant_start variant_end nom_pval r_squared beta best_hit pval_nominal_threshold\n')
+    output.write('gene_id,gene_chr,gene_start,gene_end,gene_strand,num_cis_variants,dist,variantID,variant_chr,variant_start,variant_end,nom_pval,r_squared,beta,best_hit,pval_nominal_threshold\n')
     with open(sys.argv[1], "r") as f:
         for line in f:
             qtldata = line.rstrip().split(" ")
@@ -21,5 +21,6 @@ with open(sys.argv[3], "a+") as output:
             # If satisfies threshold, write to file
             nom_pval = float(qtldata[11])
             if nom_pval <= pval_threshold:
-              new_line = line.rstrip() + " " + str(pval_threshold)
+              # Make line comma-separated
+              new_line = ",".join(qtldata) + "," + str(pval_threshold) + "\n"
               output.write(new_line)

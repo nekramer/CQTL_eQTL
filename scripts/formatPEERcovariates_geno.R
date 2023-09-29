@@ -1,37 +1,48 @@
 #!/usr/bin/R
 library(tidyverse)
 library(janitor)
+library(glue)
 
 args <- commandArgs(trailingOnly = TRUE)
 
 # Read in PEER factors and subset for numPEER
 if (file.exists(args[2])){
-  numPEER <- read_csv(args[2], col_names = FALSE) %>% pull(X1)
+  print("PEER factor number detected. Reading specific number of PEER factors.")
+  numPEER <- read_csv(args[2], show_col_types = FALSE, col_names = FALSE) %>% pull(X1)
   peer <- read_csv(args[1]) %>%
     dplyr::select(paste0("PEER", 1:numPEER), Donor)
 } else {
-  peer <- read_csv(args[1])
+  peer <- read_csv(args[1], show_col_types = FALSE)
+  npeer <- ncol(peer)
+  print(glue('Reading in {npeer - 1} PEER factors.'))
 }
 
 # Read in donorInfo to get sex (age?)
-donorInfo <- read_csv(args[3]) %>% dplyr::select(Donor, Sex)
+print("Reading in donor samplesheet...")
+donorInfo <- read_csv(args[3], show_col_types = FALSE) %>% 
+  dplyr::select(Donor, Sex)
+
 
 
 # Read in DNA samplesheet
-dnaBatches <- c("Batch", "DNAReagentBatch")[c(as.logical(args[5]), 
+dnaBatches <- c("GenotypingBatch", "DNAReagentBatch")[c(as.logical(args[5]), 
                                               as.logical(args[6]))]
-dnaInfo <- read_csv(args[4]) %>% dplyr::select(Donor, all_of(dnaBatches))
+print("Reading in DNA samplesheet...")
+dnaInfo <- read_csv(args[4], show_col_types = FALSE) %>% 
+  dplyr::select(Donor, all_of(dnaBatches))
 
 # Read in RNA samplesheet
 rnaBatches <- c("RNAextractionKitBatch", "SequencingBatch")[c(as.logical(args[8]),
                                                               as.logical(args[9]))]
 condition <- args[10]
-rnaInfo <- read_csv(args[7]) %>% 
+print("Reading in RNA samplesheet...")
+rnaInfo <- read_csv(args[7], show_col_types = FALSE) %>% 
   distinct(Sample, .keep_all = TRUE) %>%
   filter(Condition == condition) %>%
   dplyr::select(Donor, all_of(rnaBatches))
 
 # Join covariates thus far
+print("Joining PEER factors with DNA and RNA covariates")
 covariates <- peer %>%
   full_join(donorInfo) %>%
   full_join(dnaInfo) %>%
@@ -46,7 +57,9 @@ covariates <- peer %>%
 
 # Read in genoPCs
 numgenoPC <- as.numeric(args[12])
-genoPCs <- read_delim(args[11], delim = " ") %>%
+print(glue('Reading in {numgenoPC} genotyping PCs'))
+
+genoPCs <- read_delim(args[11], delim = " ", show_col_types = FALSE) %>%
   dplyr::select(-SampleID) %>%
   mutate("covariate" = paste0("geno_PC", 1:nrow(.))) %>%
   # Put donor columns in same order of covariates
@@ -55,8 +68,11 @@ genoPCs <- read_delim(args[11], delim = " ") %>%
   filter(covariate %in% paste0("geno_PC", 1:numgenoPC))
 
 # Join covariates with genoPCs
+print("Adding genotyping PCs to covariates")
 covariates <- rbind(covariates, genoPCs)
 
 # Write to tab-delimited file
+print("Writing to output")
 write_delim(covariates, file = args[13], delim = "\t")
+print("Success!")
   

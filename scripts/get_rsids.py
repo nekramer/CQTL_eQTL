@@ -17,13 +17,13 @@ qtl_dbSNP_all = []
 
 # Iterate through chromosomes
 for chr in range(1, 23):
-
+    print('Processing chr' + str(chr))
     # Subset qtl_pos for chr
     qtl_pos_chr = qtl_pos[qtl_pos['chr'] == 'chr' + str(chr)]
 
     # Read in dbSNP file for chr
     dbSNP_chr = pd.read_csv(dbSNP + '/' + prefix + '_chr' + str(chr) + '.csv')
-
+    print('Successfully read in dbSNP file for chr' + str(chr))
     # Join qtl_pos_chr and dbSNP_chr trying to match alleles (both to ref and alt)
     qtl_dbSNP = pd.concat([qtl_pos_chr.merge(dbSNP_chr, how = 'left', 
                       left_on = ['pos', 'a1', 'a2'], 
@@ -31,7 +31,7 @@ for chr in range(1, 23):
     qtl_pos_chr.merge(dbSNP_chr, how = 'left',
                       left_on = ['pos', 'a1', 'a2'],
                       right_on = ['pos', 'alt', 'ref'])])
-
+    print('Successfully joined qtl data and dbSNP data for chr' + str(chr))
     # Remove duplicates
     qtl_dbSNP_dedup = qtl_dbSNP.drop_duplicates()
 
@@ -46,4 +46,5 @@ for chr in range(1, 23):
 qtl_dbSNP_all_final = pd.concat(qtl_dbSNP_all)
 
 # Write to file
+print('Writing to file...')
 qtl_dbSNP_all_final.to_csv(outfile, index = False)
