@@ -38,10 +38,16 @@ for chr in range(1, 23):
     # Remove a1 and a2 columns 
     qtl_dbSNP_final = qtl_dbSNP_dedup.drop(columns = ['a1', 'a2'])
 
+
+    print(qtl_dbSNP_final.index)
+    print(qtl_dbSNP_final.loc[qtl_dbSNP_final['rsID'].isnull(), 'rsID'])
+    print(qtl_dbSNP_final.loc[qtl_dbSNP_final['rsID'].isnull(), 'variantID'])
+
+
     # Rename NA's to variantID and grab alleles
-    qtl_dbSNP_final.loc[qtl_dbSNP_final['rsID'].isnull(), 'rsID'] = qtl_dbSNP_final['variantID']
-    qtl_dbSNP_final.loc[qtl_dbSNP_final['ref'].isnull(), 'ref'] = qtl_dbSNP_final['variantID'].str.split(':').str[2]
-    qtl_dbSNP_final.loc[qtl_dbSNP_final['alt'].isnull(), 'alt'] = qtl_dbSNP_final['variantID'].str.split(':').str[3]
+    qtl_dbSNP_final.loc[qtl_dbSNP_final['rsID'].isnull(), 'rsID'] = qtl_dbSNP_final.loc[qtl_dbSNP_final['rsID'].isnull(), 'variantID']
+    qtl_dbSNP_final.loc[qtl_dbSNP_final['ref'].isnull(), 'ref'] = qtl_dbSNP_final.loc[qtl_dbSNP_final['rsID'].isnull(), 'variantID'].str.split(':').str[2]
+    qtl_dbSNP_final.loc[qtl_dbSNP_final['alt'].isnull(), 'alt'] = qtl_dbSNP_final.loc[qtl_dbSNP_final['rsID'].isnull(), 'variantID'].str.split(':').str[3]
 
     # Append to list
     qtl_dbSNP_all.append(qtl_dbSNP_final)
