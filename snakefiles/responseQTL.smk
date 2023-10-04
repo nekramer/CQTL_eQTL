@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 ## Load config file
-configfile: "config/config_reQTL.yaml"
+configfile: "config/config_reQTL_final.yaml"
 vcf = config['vcf']
 rna = config['rna']
 Nk = config['PEERfactors']
@@ -20,16 +20,15 @@ peerCov += ".csv"
 
 rule all:
     input:
-        expand('output/reQTL/{condition}_sig_reQTLs.rds', condition = ['CTL', 'FNF']),
-        expand('output/reQTL/{condition}_sig_reQTLs.csv', condition = ['CTL', 'FNF'])
+        'output/reQTL/FNF_sig_reQTLs.rds',
+        'output/reQTL/FNF_sig_reQTLs.csv'
 
-# Separate eGenes that are only found in CTL vs only found in FNF
+# Separate eGenes that are only found in FNF
 rule sep_eGenes:
     input:
-        CTL_eQTL = config['eQTL'] + 'CTL_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR.txt',
-        FNF_eQTL = config['eQTL'] + 'FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR.txt'   
+        CTL_eQTL = config['eQTL_dir'] + 'CTL_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR_rsids.csv',
+        FNF_eQTL = config['eQTL_dir'] + 'FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR_rsids.csv'   
     output:
-        'output/reQTL/CTLonly_sig_eGenes.csv',
         'output/reQTL/FNFonly_sig_eGenes.csv'
     params:
         version = config['Rversion'],
@@ -47,11 +46,10 @@ rule sep_eGenes:
 # Filter the VCF file for both sets of significant lead variants
 rule subsetVCF_leadvar:
     input:
-        eGenes_CTL = 'output/reQTL/CTLonly_sig_eGenes.csv',
         eGenes_FNF = 'output/reQTL/FNFonly_sig_eGenes.csv',
         vcf = vcf
     output:
-        'output/reQTL/ALL_leadVars.vcf.gz'
+        'output/reQTL/FNF_leadVars.vcf.gz'
     params:
         version = config['gatkVersion']
     log:
@@ -61,14 +59,11 @@ rule subsetVCF_leadvar:
         """
         module load gatk/{params.version}
         # Grab variantID from each condition-specific eGenes list, removing header
-        cut -d "," -f7 {input.eGenes_CTL} > output/reQTL/CTL_variants.list
-        sed -i '1d' output/reQTL/CTL_variants.list
+        # 7th column in eGenes file is variantID
         cut -d "," -f7 {input.eGenes_FNF} > output/reQTL/FNF_variants.list
         sed -i '1d' output/reQTL/FNF_variants.list
-        # Concatenate
-        cat output/reQTL/CTL_variants.list output/reQTL/FNF_variants.list > output/reQTL/ALL_variants.list
         # Subset vcf for these
-        gatk SelectVariants -V {input.vcf} --keep-ids output/reQTL/ALL_variants.list -O {output} 1> {log.out} 2> {log.err}
+        gatk SelectVariants -V {input.vcf} --keep-ids output/reQTL/FNF_variants.list -O {output} 1> {log.out} 2> {log.err}
         """
 
 # Get PEER factors for ALL norm RNA counts
@@ -85,7 +80,7 @@ rule getPEER_ALL:
         err = 'output/logs/ALL_getPEER.err'
     shell:
         """
-        module load r/4.2.0
+        module load r/4.2.2
         Rscript scripts/PEERfactors.R {input} ALL {params.Nk} FALSE 1> {log.out} 2> {log.err}
         """
 
@@ -98,7 +93,7 @@ rule makePEERcovar_geno_ALL:
     params:
         version = config['Rversion'],
         genoPC = config['genoPC'],
-        genoPCkneedle = config['genoPCkneedle'],
+        numgenoPCs = config['genoPCkneedle'],
         donorSamplesheet = config['donorSamplesheet'],
         dnaSamplesheet = config['dnaSamplesheet'],
         samplesheet = config['samplesheet'],
@@ -113,9 +108,8 @@ rule makePEERcovar_geno_ALL:
     shell:
         """
         module load r/{params.version}
-        numgenoPCs=`cat {params.genoPCkneedle}`
 
-        Rscript scripts/responseQTL/formatPEERcovariates_geno_ALL.R {input.peer} {params.donorSamplesheet} {params.dnaSamplesheet} {params.genoBatch} {params.DNAKitBatch} {params.samplesheet} {params.RNAKitBatch} {params.RNASequencingBatch} {params.genoPC} ${{numgenoPCs}} {output} 1> {log.out} 2> {log.err}
+        Rscript scripts/responseQTL/formatPEERcovariates_geno_ALL.R {input.peer} {params.donorSamplesheet} {params.dnaSamplesheet} {params.genoBatch} {params.DNAKitBatch} {params.samplesheet} {params.RNAKitBatch} {params.RNASequencingBatch} {params.genoPC} {params.numgenoPCs} {output} 1> {log.out} 2> {log.err}
         """
 
 rule get_reQTLs:
@@ -123,23 +117,19 @@ rule get_reQTLs:
         normExpression = rna,
         covariates = rules.makePEERcovar_geno_ALL.output,
         vcf = rules.subsetVCF_leadvar.output,
-        eGene = lambda wildcards: 'output/reQTL/{condition}only_sig_eGenes.csv'.format(condition = wildcards.condition)
+        eGene = rules.sep_eGenes.output
     output:
-        rds = 'output/reQTL/{condition}_sig_reQTLs.rds',
-        csv = 'output/reQTL/{condition}_sig_reQTLs.csv'
+        rds = 'output/reQTL/FNF_sig_reQTLs.rds',
+        csv = 'output/reQTL/FNF_sig_reQTLs.csv'
     params:
         version = config['Rversion'],
         threshold = config['FDRthreshold']
     log:
-        out = "output/logs/get{condition}reQTLs.out",
-        err = "output/logs/get{condition}reQTLs.err"
+        out = "output/logs/getreQTLs.out",
+        err = "output/logs/getreQTLs.err"
     shell:
         """
         module load r/{params.version}
         Rscript scripts/responseQTL/testInteraction.R {input.normExpression} {input.covariates} {input.vcf} {input.eGene} {params.threshold} {output.rds} {output.csv} 1> {log.out} 2> {log.err}
         """
 
-# Get rsids
-
-# plot side-by-side
-# plot individually

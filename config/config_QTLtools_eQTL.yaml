@@ -50,8 +50,8 @@ verifybamid: '/work/users/n/e/nekramer/software/verifyBamID_1.1.3/verifyBamID/bi
 
 ## Covariate parameters
 RNAKitBatch: 'TRUE'
-RNASequencingBatch: 'TRUE'
-genoBatch: 'TRUE'
+RNASequencingBatch: 'FALSE'
+genoBatch: 'FALSE'
 DNAKitBatch: 'TRUE'
 PEERfactors: 50 # Maximum number of PEER factors
 iteratePEER: 'TRUE' # If TRUE, will try different numbers of PEER factors until maximum, in iterations of iterateBy. If FALSE, will use kneedle to determine number of PEER factors to include from max.

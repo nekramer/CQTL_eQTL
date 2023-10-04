@@ -19,6 +19,9 @@ case $1 in
        'QTLtools_eQTL' | 'runQTLtools_eQTL')
             ## Unlock snakemake workflow
             snakemake -j 1 --unlock -s snakefiles/QTLtools_eQTL.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py
+               ;;
+        'responseQTL' | 'run_responseQTL')
+                snakemake -j 1 --unlock -s snakefiles/responseQTL.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py   
             ;;
 esac
 

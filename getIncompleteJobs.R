@@ -1,6 +1,6 @@
 
 
-fileLines <- readLines("eQTL_QTLtools-18759968.out")
+fileLines <- readLines("/work/users/n/e/nekramer/CQTL_eQTL/eQTL_QTLtools-18988471.out")
 
 
 submittedJobs <- numeric(0)

@@ -15,7 +15,7 @@ donorInfo <- read_csv(args[2]) %>% dplyr::select(Donor, Sex)
 
 
 # Read in DNA samplesheet
-dnaBatches <- c("Batch", "DNAReagentBatch")[c(as.logical(args[4]), 
+dnaBatches <- c("GenotypingBatch", "DNAReagentBatch")[c(as.logical(args[4]), 
                                               as.logical(args[5]))]
 dnaInfo <- read_csv(args[3]) %>% dplyr::select(Donor, all_of(dnaBatches))
 
