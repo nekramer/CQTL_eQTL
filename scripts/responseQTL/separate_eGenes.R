@@ -4,7 +4,8 @@ library(tidyverse)
 args <- commandArgs(trailingOnly = TRUE)
 correction <- args[3] # Which correction to use (FDR or qval both have columns)
 threshold <- as.numeric(args[4])
-
+ctlOut <- args[5]
+fnfOut <- args[6]
 
 
 CTL_sig_eGenes <- read_csv(args[1]) |> 
@@ -22,5 +23,9 @@ FNF_sig_eGenes <- read_csv(args[2]) |>
                 contains(correction))
 
 
-FNF_only <- FNF_sig_eGenes[!FNF_sig_eGenes$gene_id |> CTL_sig_eGenes$gene_id,]
-write_csv(FNF_only, file = "output/reQTL/FNFonly_sig_eGenes.csv")
+
+CTL_only <- CTL_sig_eGenes[!CTL_sig_eGenes$gene_id %in% FNF_sig_eGenes$gene_id,]
+write_csv(CTL_only, ctlOut)
+
+FNF_only <- FNF_sig_eGenes[!FNF_sig_eGenes$gene_id %in% CTL_sig_eGenes$gene_id,]
+write_csv(FNF_only, fnfOut)

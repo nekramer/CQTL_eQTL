@@ -29,7 +29,8 @@ rule sep_eGenes:
         CTL_eQTL = config['eQTL_dir'] + 'CTL_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR_rsids.csv',
         FNF_eQTL = config['eQTL_dir'] + 'FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR_rsids.csv'   
     output:
-        'output/reQTL/FNFonly_sig_eGenes.csv'
+        ctl_out = 'output/reQTL/CTLonly_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv',
+        fnf_out = 'output/reQTL/FNFonly_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv'
     params:
         version = config['Rversion'],
         correction = config['correction'],
@@ -40,16 +41,17 @@ rule sep_eGenes:
     shell:
         """
         module load r/{params.version}
-        Rscript scripts/responseQTL/separate_eGenes.R {input.CTL_eQTL} {input.FNF_eQTL} {params.correction} {params.threshold} 1> {log.out} 2> {log.err}
+        Rscript scripts/responseQTL/separate_eGenes.R {input.CTL_eQTL} {input.FNF_eQTL} {params.correction} {params.threshold} {output.ctl_out} {output.fnf_out} 1> {log.out} 2> {log.err}
         """ 
 
 # Filter the VCF file for both sets of significant lead variants
 rule subsetVCF_leadvar:
     input:
-        eGenes_FNF = 'output/reQTL/FNFonly_sig_eGenes.csv',
+        eGenes_FNF = rules.sep_eGenes.output.fnf_out,
         vcf = vcf
     output:
-        'output/reQTL/FNF_leadVars.vcf.gz'
+        'output/reQTL/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_leadVars.vcf.gz',
+        temp('output/reQTL/FNF_variants.list')
     params:
         version = config['gatkVersion']
     log:
@@ -117,10 +119,10 @@ rule get_reQTLs:
         normExpression = rna,
         covariates = rules.makePEERcovar_geno_ALL.output,
         vcf = rules.subsetVCF_leadvar.output,
-        eGene = rules.sep_eGenes.output
+        eGene = rules.sep_eGenes.output.fnf_out
     output:
-        rds = 'output/reQTL/FNF_sig_reQTLs.rds',
-        csv = 'output/reQTL/FNF_sig_reQTLs.csv'
+        rds = 'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.rds',
+        csv = 'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv'
     params:
         version = config['Rversion'],
         threshold = config['FDRthreshold']
