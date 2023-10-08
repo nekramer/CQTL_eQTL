@@ -20,8 +20,8 @@ peerCov += ".csv"
 
 rule all:
     input:
-        'output/reQTL/FNF_sig_reQTLs.rds',
-        'output/reQTL/FNF_sig_reQTLs.csv'
+        'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.rds',
+        'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv',
 
 # Separate eGenes that are only found in FNF
 rule sep_eGenes:
@@ -44,14 +44,27 @@ rule sep_eGenes:
         Rscript scripts/responseQTL/separate_eGenes.R {input.CTL_eQTL} {input.FNF_eQTL} {params.correction} {params.threshold} {output.ctl_out} {output.fnf_out} 1> {log.out} 2> {log.err}
         """ 
 
+rule make_leadList:
+    input:
+        rules.sep_eGenes.output.fnf_out
+    output:
+        temp('output/reQTL/FNF_variants.list')
+    log:
+        out = 'output/logs/make_leadList.out',
+        err = 'output/logs/make_leadList.err'
+    shell:
+        """
+        cut -d "," -f7 {input} > output/reQTL/FNF_variants.list
+        sed -i '1d' output/reQTL/FNF_variants.list
+        """
+
 # Filter the VCF file for both sets of significant lead variants
 rule subsetVCF_leadvar:
     input:
-        eGenes_FNF = rules.sep_eGenes.output.fnf_out,
+        leadvar_FNF = 'output/reQTL/FNF_variants.list',
         vcf = vcf
     output:
-        'output/reQTL/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_leadVars.vcf.gz',
-        temp('output/reQTL/FNF_variants.list')
+        'output/reQTL/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_leadVars.vcf.gz'
     params:
         version = config['gatkVersion']
     log:
@@ -60,12 +73,9 @@ rule subsetVCF_leadvar:
     shell:
         """
         module load gatk/{params.version}
-        # Grab variantID from each condition-specific eGenes list, removing header
-        # 7th column in eGenes file is variantID
-        cut -d "," -f7 {input.eGenes_FNF} > output/reQTL/FNF_variants.list
-        sed -i '1d' output/reQTL/FNF_variants.list
+        
         # Subset vcf for these
-        gatk SelectVariants -V {input.vcf} --keep-ids output/reQTL/FNF_variants.list -O {output} 1> {log.out} 2> {log.err}
+        gatk SelectVariants -V {input.vcf} --keep-ids {input.leadvar_FNF} -O {output} 1> {log.out} 2> {log.err}
         """
 
 # Get PEER factors for ALL norm RNA counts

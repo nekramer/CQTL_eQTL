@@ -9,14 +9,14 @@ fnfOut <- args[6]
 
 
 CTL_sig_eGenes <- read_csv(args[1]) |> 
-  filter(.[[correction]] <= threshold) |> 
+  filter(qval <= threshold) |> 
   distinct(gene_id, .keep_all = TRUE) |> 
   dplyr::select(gene_id, gene_name, gene_chr, gene_start, gene_end, gene_strand,
                 variantID, variant_chr, variant_start, variant_end, beta, rsID,
                 contains(correction))
 
 FNF_sig_eGenes <- read_csv(args[2]) |> 
-  filter(.[[correction]] <= threshold) |> 
+  filter(qval <= threshold) |> 
   distinct(gene_id, .keep_all = TRUE) |> 
   dplyr::select(gene_id, gene_name, gene_chr, gene_start, gene_end, gene_strand,
                 variantID, variant_chr, variant_start, variant_end, beta, rsID,

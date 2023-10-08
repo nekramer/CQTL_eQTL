@@ -1,0 +1,17 @@
+DNAKitBatch: 'FALSE'
+FDRthreshold: 0.05
+PEERfactors: 15
+RNAKitBatch: 'FALSE'
+RNASequencingBatch: 'FALSE'
+Rversion: 4.2.2
+correction: qval
+dnaSamplesheet: dnaSamplesheet.csv
+donorSamplesheet: donorSamplesheet.csv
+eQTL_dir: output/qtl/
+gatkVersion: 4.2.5.0
+genoBatch: 'FALSE'
+genoPC: output/covar/genotypes.pca
+genoPCkneedle: 4
+rna: output/normquant/ALL_CPMadjTMM_invNorm.bed.gz
+samplesheet: samplesheet.csv
+vcf: output/vcf/CQTL_COA_01_GDA8_COA2_01_COA3_01_GDA8_COA4_COA5_COA6_COA7_qtl.recode.vcf.gz
