@@ -5,10 +5,38 @@ library(dplyr)
 library(tibble)
 library(stringr)
 library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(org.Hs.eg.db)
 library(DESeq2)
 library(edgeR)
+library(plyranges)
 
 # FUNCTIONS -------------------------------------------------------------------
+# Function to get most upstream transcript TSS
+gene_tss <- function(geneRow, txdb_transcripts){
+  
+  gene_transcripts <- geneRow[[7]]
+  strand <- geneRow[[4]]
+
+  gene_transcript_info <- txdb_transcripts |> 
+    filter(tx_name_trunc %in% gene_transcripts) 
+  
+  # Get most upstream transcript
+  if (strand == "-"){
+    upstream_transcript <- gene_transcript_info |> 
+      filter(start == max(start)) |> 
+      # Just pick first one if multiple
+      distinct(tx_name, .keep_all = TRUE)
+  } else if (strand == "+"){
+    upstream_transcript <- gene_transcript_info |> 
+      filter(start == min(start)) |> 
+      # Just pick first one if multiple
+      distinct(tx_name, .keep_all = TRUE)
+  }
+  
+  tss <- upstream_transcript$start
+  return(tss)
+}
+
 # Function to inverse normalize a row of gene counts
 inverseNormGene <- function(geneRow){
   normValues <- qnorm((rank(as.numeric(geneRow),
@@ -42,9 +70,18 @@ se <- tximeta(coldata)
 gse <- summarizeToGene(se)
 
 # Filter out lowly expressed genes ---------------------------------------------
-# 5 reads in at least 25% of samples?
-# 10 reads in at least 5% of samples?
-keep <- filterByExpr(gse, min.count = 10, min.prop = 0.05)
+
+# At least 10 counts in more than 5% of samples from condition
+if (condition == "CTL"){
+  gse_subset <-  gse[, gse$Condition == "CTL"]
+  keep <- rowSums(assay(gse_subset) >= 10) >= ceiling(ncol(colData(gse_subset))*0.05)
+} else if (condition == "FNF"){
+  gse_subset <-  gse[, gse$Condition == "FNF"]
+  keep <- rowSums(assay(gse_subset) >= 10) >= ceiling(ncol(colData(gse_subset))*0.05)
+} else {
+  keep <- rowSums(assay(gse) >= 10) >= ceiling(ncol(colData(gse))*0.10)
+}
+
 gse_filtered <- gse[keep,]
 
 # TMM normalization ---------------------------------------------------------
@@ -54,9 +91,31 @@ gse_quant <- calcNormFactors(gse_filtered, method = "TMM")
 CQTL_CPMadjTMM <- as.data.frame(cpm(gse_quant))
 
 # Gene info -----------------------------------------------------------------
-gene_info <- as.data.frame(rowRanges(gse_filtered)) %>% 
-  dplyr::select(seqnames, start, end, strand, gene_id, gene_name) %>%
+gene_info <- as.data.frame(rowRanges(gse_filtered)) |> 
+  dplyr::select(seqnames, start, end, strand, gene_id, gene_name, tx_ids, biotype) |> 
+  # Filter out pseudogenes
+  filter(!str_detect(biotype, "pseudogene")) |> 
+  dplyr::select(-biotype) |> 
   mutate(seqnames = paste0("chr", seqnames))
+
+
+# Get TSS for each gene ---------------------------------------------------
+
+# Grab all transcripts from TxDb
+txdb_transcripts <- transcripts(TxDb.Hsapiens.UCSC.hg38.knownGene) |> 
+  as.data.frame() |> 
+  mutate(tx_name_trunc = gsub("\\..*", "", tx_name))
+  
+# Apply fxn to each gene row
+tss <- apply(gene_info, 1, gene_tss, txdb_transcripts = txdb_transcripts)
+
+# Replace gene start/end with tss
+gene_info$start <- tss
+gene_info$end <- tss + 1
+
+# Remove unnecessary columns
+gene_info <- gene_info |> 
+  dplyr::select(-tx_ids)
 
 # Inverse normal transformation -----------------------------------------------
 

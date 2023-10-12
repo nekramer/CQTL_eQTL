@@ -91,15 +91,15 @@ if config['iteratePEER'] == 'TRUE':
     rule_all_inputs.extend([[expand(peerQTL_perm, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
-    rule_all_inputs.extend([[expand(nom_rsid, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
-    rule_all_inputs.extend([[expand(peerMultipleTesting_rsid, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
+    #rule_all_inputs.extend([[expand(nom_rsid, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
+    rule_all_inputs.extend([[expand(peerMultipleTestingFinal, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
 else:
     rule_all_inputs.extend([[expand(peerCov, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(peerQTL_perm, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'])]])
-    rule_all_inputs.extend([[expand(nom_rsid, condition = ['CTL', 'FNF'])]])
-    rule_all_inputs.extend([[expand(peerMultipleTesting_rsid, condition = ['CTL', 'FNF'])]])
+    #rule_all_inputs.extend([[expand(nom_rsid, condition = ['CTL', 'FNF'])]])
+    rule_all_inputs.extend([[expand(peerMultipleTestingFinal, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand('output/covar/{condition}_PEERkneedle.txt', condition = ['CTL', 'FNF'])]])
 
 ## Define rules
@@ -207,43 +207,43 @@ rule PEER_multipleTesting_perm:
 
 # Get LD buddies for significant lead variants
 
-# Convert perm SNP positions to rsIDs
-rule convert_perm_rsids:
-    input:
-        rules.PEER_multipleTesting_perm.output
-    output:
-        peerMultipleTesting_rsid
-    params:
-        version = config['pythonVersion'],
-        dbSNP_dir = config['dbSNP_dir'],
-        dbSNP_prefix = config['dbSNP_prefix']
-    log:
-        out = PEER_multipleTesting_perm_rsid_out,
-        err = PEER_multipleTesting_perm_rsid_err
-    shell:
-        """
-        module load python/{params.version}
-        python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {output} 1> {log.out} 2> {log.err}
-        """
+# # Convert perm SNP positions to rsIDs
+# rule convert_perm_rsids:
+#     input:
+#         rules.PEER_multipleTesting_perm.output
+#     output:
+#         peerMultipleTesting_rsid
+#     params:
+#         version = config['pythonVersion'],
+#         dbSNP_dir = config['dbSNP_dir'],
+#         dbSNP_prefix = config['dbSNP_prefix']
+#     log:
+#         out = PEER_multipleTesting_perm_rsid_out,
+#         err = PEER_multipleTesting_perm_rsid_err
+#     shell:
+#         """
+#         module load python/{params.version}
+#         python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {output} 1> {log.out} 2> {log.err}
+#         """
 
 # Convert nominal SNP position to rsIDs
-rule convert_nominal_rsids:
-    input:
-        rules.nominal_Filter.output
-    output:
-        nom_rsid
-    params:
-        version = config['pythonVersion'],
-        dbSNP_dir = config['dbSNP_dir'],
-        dbSNP_prefix = config['dbSNP_prefix']
-    log:
-        out = nom_rsid_out,
-        err = nom_rsid_err
-    shell:
-        """
-        module load python/{params.version}
-        python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {output} 1> {log.out} 2> {log.err}
-        """
+# rule convert_nominal_rsids:
+#     input:
+#         rules.nominal_Filter.output
+#     output:
+#         nom_rsid
+#     params:
+#         version = config['pythonVersion'],
+#         dbSNP_dir = config['dbSNP_dir'],
+#         dbSNP_prefix = config['dbSNP_prefix']
+#     log:
+#         out = nom_rsid_out,
+#         err = nom_rsid_err
+#     shell:
+#         """
+#         module load python/{params.version}
+#         python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {output} 1> {log.out} 2> {log.err}
+#         """
 
 # Populate config file for response QTL workflow
 rule update_reQTL:
