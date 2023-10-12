@@ -29,8 +29,9 @@ rule sep_eGenes:
         CTL_eQTL = config['eQTL_dir'] + 'CTL_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR_rsids.csv',
         FNF_eQTL = config['eQTL_dir'] + 'FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR_rsids.csv'   
     output:
-        ctl_out = 'output/reQTL/CTLonly_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv',
-        fnf_out = 'output/reQTL/FNFonly_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv'
+        fnf_sigout = 'output/reQTL/FNF_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv',
+        ctl_onlyout = 'output/reQTL/CTLonly_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv',
+        fnf_onlyout = 'output/reQTL/FNFonly_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv'
     params:
         version = config['Rversion'],
         correction = config['correction'],
@@ -41,12 +42,12 @@ rule sep_eGenes:
     shell:
         """
         module load r/{params.version}
-        Rscript scripts/responseQTL/separate_eGenes.R {input.CTL_eQTL} {input.FNF_eQTL} {params.correction} {params.threshold} {output.ctl_out} {output.fnf_out} 1> {log.out} 2> {log.err}
+        Rscript scripts/responseQTL/separate_eGenes.R {input.CTL_eQTL} {input.FNF_eQTL} {params.correction} {params.threshold} {output.fnf_sigout} {output.ctl_onlyout} {output.fnf_onlyout} 1> {log.out} 2> {log.err}
         """ 
 
 rule make_leadList:
     input:
-        rules.sep_eGenes.output.fnf_out
+        rules.sep_eGenes.output.fnf_sigout
     output:
         temp('output/reQTL/FNF_variants.list')
     log:
