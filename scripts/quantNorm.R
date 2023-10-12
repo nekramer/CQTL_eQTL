@@ -32,8 +32,13 @@ gene_tss <- function(geneRow, txdb_transcripts){
       # Just pick first one if multiple
       distinct(tx_name, .keep_all = TRUE)
   }
-  
-  tss <- upstream_transcript$start
+
+  tss <- unique(upstream_transcript$start)
+  print(tss)
+  if (length(tss) == 0) {
+    tss <- NA
+  }
+
   return(tss)
 }
 
@@ -92,10 +97,10 @@ CQTL_CPMadjTMM <- as.data.frame(cpm(gse_quant))
 
 # Gene info -----------------------------------------------------------------
 gene_info <- as.data.frame(rowRanges(gse_filtered)) |> 
-  dplyr::select(seqnames, start, end, strand, gene_id, gene_name, tx_ids, biotype) |> 
+  dplyr::select(seqnames, start, end, strand, gene_id, gene_name, tx_ids, gene_biotype) |> 
   # Filter out pseudogenes
-  filter(!str_detect(biotype, "pseudogene")) |> 
-  dplyr::select(-biotype) |> 
+  filter(!str_detect(gene_biotype, "pseudogene")) |> 
+  dplyr::select(-gene_biotype) |> 
   mutate(seqnames = paste0("chr", seqnames))
 
 
@@ -109,12 +114,15 @@ txdb_transcripts <- transcripts(TxDb.Hsapiens.UCSC.hg38.knownGene) |>
 # Apply fxn to each gene row
 tss <- apply(gene_info, 1, gene_tss, txdb_transcripts = txdb_transcripts)
 
-# Replace gene start/end with tss
-gene_info$start <- tss
-gene_info$end <- tss + 1
+# Replace gene start with TSS
+gene_info$start <- as.numeric(tss)
 
-# Remove unnecessary columns
 gene_info <- gene_info |> 
+  # Filter any NA
+  filter(!is.na(start)) |>
+  # Update ennd
+  mutate(end = start + 1) |>
+  # Remove transcript column 
   dplyr::select(-tx_ids)
 
 # Inverse normal transformation -----------------------------------------------
