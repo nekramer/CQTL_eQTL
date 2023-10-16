@@ -160,41 +160,62 @@ rule align:
         '--alignMatesGapMax 1000000 '
         '--waspOutputMode SAMtag '
         '--varVCFfile <(zcat {input.vcf}) 1> {log.out}'
-    
-# Filter tagged WASP reads
-rule WASPfilter:
+
+rule index:
     input:
-        R = rules.align.output.bam
+        rules.align.output.bam
     output:
-        bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.bam',
-        bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.bam.bai'
-    threads: 2
+        bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.out.bam.bai'
+    threads: 8
+    params:
+        samtoolsVersion = config['samtoolsVersion']
     log:
-        err1 = 'output/logs/WASPfilter_{group}_grep.err',
-        err2 = 'output/logs/WASPfilter_{group}_samtoolsView.err',
-        err3 = 'output/logs/WASPfilter_{group}_samtoolsIndex.err'
+        out = "output/logs/index_{group}.out",
+        err = "output/logs/index_{group}.err"
     shell:
         """
-        module load samtools
-        # Add header
-        samtools view -H {input.R} > output/{wildcards.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam
-        
-        # Grep for WASP-passing reads
-        samtools view {input.R} | grep 'vW:i:1' >> output/{wildcards.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam 2> {log.err1}
-
-        # Compress and index
-        samtools view -bS output/{wildcards.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam > {output.bam} 2> {log.err2}
-        samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err3}
+        module load samtools/{params.samtoolsVersion}
+        samtools index -@ {threads} {input} {output} 1> {log.out} 2> {log.err}
         """
+
+# Filter tagged WASP reads
+# rule WASPfilter:
+#     input:
+#         R = rules.align.output.bam
+#     output:
+#         bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.bam',
+#         bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.bam.bai'
+#     threads: 2
+#     log:
+#         err1 = 'output/logs/WASPfilter_{group}_grep.err',
+#         err2 = 'output/logs/WASPfilter_{group}_samtoolsView.err',
+#         err3 = 'output/logs/WASPfilter_{group}_samtoolsIndex.err'
+#     shell:
+#         """
+#         module load samtools
+#         # Add header
+#         samtools view -H {input.R} > output/{wildcards.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam
+        
+#         # Grep for WASP-passing reads
+#         samtools view {input.R} | grep 'vW:i:1' >> output/{wildcards.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam 2> {log.err1}
+
+#         # Compress and index
+#         samtools view -bS output/{wildcards.group}/align/{wildcards.group}.Aligned.sortedByCoord.WASP.sam > {output.bam} 2> {log.err2}
+#         samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err3}
+#         """
 
 # Add read groups to bam files, using donor name as group
 rule addReadGroups:
     input:
-        bam = rules.WASPfilter.output.bam,
-        bai = rules.WASPfilter.output.bai
+        #bam = rules.WASPfilter.output.bam,
+        #bai = rules.WASPfilter.output.bai
+        bam = rules.align.output.bam,
+        bai = rules.index.output.bai
     output:
-        bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam',
-        bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam.bai'
+        #bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam',
+        #bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.WASP.RG.bam.bai'
+        bam = 'output/{group}/align/{group}.Aligned.sortedByCoord.RG.bam',
+        bai = 'output/{group}/align/{group}.Aligned.sortedByCoord.RG.bam.bai'
     params:
         picardVersion = config['picardVersion']
     log:
@@ -220,19 +241,19 @@ rule verifybamid:
         bam = rules.addReadGroups.output.bam,
         bai = rules.addReadGroups.output.bai
     output:
-        selfSM = 'output/qc/{group}_verifybamid.selfSM',
-        selfRG = 'output/qc/{group}_verifybamid.selfRG',
-        bestRG = 'output/qc/{group}_verifybamid.bestRG',
-        bestSM = 'output/qc/{group}_verifybamid.bestSM',
-        depthRG = 'output/qc/{group}_verifybamid.depthRG',
-        depthSM = 'output/qc/{group}_verifybamid.depthSM'
+        selfSM = 'output/qc/{group}_noWASP_verifybamid.selfSM',
+        selfRG = 'output/qc/{group}_noWASP_verifybamid.selfRG',
+        bestRG = 'output/qc/{group}_noWASP_verifybamid.bestRG',
+        bestSM = 'output/qc/{group}_noWASP_verifybamid.bestSM',
+        depthRG = 'output/qc/{group}_noWASP_verifybamid.depthRG',
+        depthSM = 'output/qc/{group}_noWASP_verifybamid.depthSM'
     params:
         verifybamid = config['verifybamid']
     log:
         err = 'output/logs/verifybamid_{group}.err'
     shell:
         """
-        {params.verifybamid} --vcf {input.vcf} --bam {input.bam} --best --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
+        {params.verifybamid} --vcf {input.vcf} --bam {input.bam} --best --out output/qc/{wildcards.group}_noWASP_verifybamid 2> {log.err}
         """
 
 # Convert filtered bams back to fastqs
@@ -241,8 +262,10 @@ rule convertBams:
         bam = rules.addReadGroups.output.bam,
         bai = rules.addReadGroups.output.bai
     output:
-        R1 = 'output/{group}/align/{group}_WASP.RG_R1.fq',
-        R2 = 'output/{group}/align/{group}_WASP.RG_R2.fq'
+        #R1 = 'output/{group}/align/{group}_WASP.RG_R1.fq',
+        #R2 = 'output/{group}/align/{group}_WASP.RG_R2.fq'
+        R1 = 'output/{group}/align/{group}_RG_R1.fq',
+        R2 = 'output/{group}/align/{group}_RG_R2.fq'
     params:
         samtoolsVersion = config['samtoolsVersion']
     log:
@@ -260,7 +283,7 @@ rule quant:
         fq1 = rules.convertBams.output.R1,
         fq2 = rules.convertBams.output.R2
     output:
-        "output/quant/{group}/quant.sf"
+        "output/quant/{group}_noWASP/quant.sf"
     params:
         version = config['salmonVersion'],
         index = config['salmon'],
@@ -274,13 +297,13 @@ rule quant:
         module load salmon/{params.version}
 
         if [ {params.gcFlag} == "TRUE" ] && [ {params.seqFlag} == "TRUE" ]; then
-            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group} --threads 2 --seqBias --gcBias 1> {log.out} 2> {log.err}
+            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group}_noWASP --threads 2 --seqBias --gcBias 1> {log.out} 2> {log.err}
         elif [ {params.gcFlag} == "TRUE" ] && [ {params.seqFlag} != "TRUE" ]; then
-            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group} --threads 2 --gcBias 1> {log.out} 2> {log.err}
+            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group}_noWASP --threads 2 --gcBias 1> {log.out} 2> {log.err}
         elif [ {params.gcFlag} != "TRUE"] && [ {params.seqFlag} == "TRUE" ]; then
-            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group} --threads 2 --seqBias 1> {log.out} 2> {log.err}
+            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group}_noWASP --threads 2 --seqBias 1> {log.out} 2> {log.err}
         else
-            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group} --threads 2 1> {log.out} 2> {log.err}
+            salmon quant --writeUnmappedNames -l A -1 {input.fq1} -2 {input.fq2} -i {params.index} -o output/quant/{wildcards.group}_noWASP --threads 2 1> {log.out} 2> {log.err}
         fi
         """
 
@@ -289,11 +312,11 @@ rule multiqc:
         [expand('output/qc/{group}_{R}_fastqc.zip', group = key, R = ['R1', 'R2']) for key in read1],
         [expand('output/{group}/trim/{group}_{R}.fastq.gz_trimming_report.txt', group = key, R =['R1', 'R2']) for key in read1],
         [expand('output/{group}/align/{group}.Log.final.out', group = key) for key in read1],
-        [expand('output/quant/{group}/quant.sf', group = key) for key in read1],
-        [expand('output/qc/{group}_verifybamid.selfSM', group = key) for key in read1],
+        [expand('output/quant/{group}_noWASP/quant.sf', group = key) for key in read1],
+        [expand('output/qc/{group}_noWASP_verifybamid.selfSM', group = key) for key in read1],
         rules.bcftools_stats.output
     output:
-        'output/qc/multiqc_report.html'
+        'output/qc_noWASP/multiqc_report.html'
     params:
         version = config['multiqcVersion']
     log:
@@ -302,14 +325,14 @@ rule multiqc:
     shell:
         """
         module load multiqc/{params.version}
-        multiqc -f -o output/qc . 1> {log.out} 2> {log.err}
+        multiqc -f -o output/qc_noWASP . 1> {log.out} 2> {log.err}
         """
     
 rule quantNorm_Condition:
     input:
-        [expand("output/quant/{group}/quant.sf", group = key) for key in read1]
+        [expand("output/quant/{group}_noWASP/quant.sf", group = key) for key in read1]
     output:
-        "output/normquant/{condition}_CPMadjTMM_invNorm.bed"
+        "output/normquant/{condition}_noWASP_CPMadjTMM_invNorm.bed"
     params:
         version = config['Rversion'],
         samplesheet = config['samplesheet']
@@ -324,9 +347,9 @@ rule quantNorm_Condition:
 
 rule quantNorm_All:
     input:
-        [expand("output/quant/{group}/quant.sf", group = key) for key in read1]
+        [expand("output/quant/{group}_noWASP/quant.sf", group = key) for key in read1]
     output:
-        "output/normquant/ALL_CPMadjTMM_invNorm.bed"
+        "output/normquant/ALL_noWASP_CPMadjTMM_invNorm.bed"
     params:
         version = config['Rversion'],
         samplesheet = config['samplesheet']
@@ -341,10 +364,10 @@ rule quantNorm_All:
 
 rule indexQuant_Condition:
     input:
-        lambda wildcards: ['output/normquant/{condition}_CPMadjTMM_invNorm.bed'.format(condition=wildcards.condition)]
+        lambda wildcards: ['output/normquant/{condition}_noWASP_CPMadjTMM_invNorm.bed'.format(condition=wildcards.condition)]
     output:
-        bed = 'output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz',
-        index = 'output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz.tbi'
+        bed = 'output/normquant/{condition}_noWASP_CPMadjTMM_invNorm.bed.gz',
+        index = 'output/normquant/{condition}_noWASP_CPMadjTMM_invNorm.bed.gz.tbi'
     params:
         version = config['samtoolsVersion']
     log:
@@ -360,8 +383,8 @@ rule indexQuant_All:
     input:
         rules.quantNorm_All.output
     output:
-        bed = 'output/normquant/ALL_CPMadjTMM_invNorm.bed.gz',
-        index = 'output/normquant/ALL_CPMadjTMM_invNorm.bed.gz.tbi'
+        bed = 'output/normquant/ALL_noWASP_CPMadjTMM_invNorm.bed.gz',
+        index = 'output/normquant/ALL_noWASP_CPMadjTMM_invNorm.bed.gz.tbi'
     params:
          version = config['samtoolsVersion']
     log:
@@ -375,10 +398,10 @@ rule indexQuant_All:
 
 rule getPEER:
     input:
-        lambda wildcards: ['output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz'.format(condition=wildcards.condition)]
+        lambda wildcards: ['output/normquant/{condition}_noWASP_CPMadjTMM_invNorm.bed.gz'.format(condition=wildcards.condition)]
     output:
-        factors = 'output/covar/{condition}_PEERfactors_k{Nk}.txt',
-        var = 'output/covar/{condition}_PEERfactors_k{Nk}_variance.txt'
+        factors = 'output/covar/{condition}_noWASP_PEERfactors_k{Nk}.txt',
+        var = 'output/covar/{condition}_noWASP_PEERfactors_k{Nk}_variance.txt'
     params:
         Nk = config['PEERfactors'],
         iteratePEER = config['iteratePEER'],
@@ -389,5 +412,5 @@ rule getPEER:
     shell:
         """
         module load r/4.2.2
-        Rscript scripts/PEERfactors.R {input} {wildcards.condition} {wildcards.Nk} FALSE {params.iterateBy} 1> {log.out} 2> {log.err}
+        Rscript scripts/PEERfactors.R {input} {wildcards.condition}_noWASP {wildcards.Nk} FALSE {params.iterateBy} 1> {log.out} 2> {log.err}
         """

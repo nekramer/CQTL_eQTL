@@ -38,21 +38,21 @@ vcf_prefix = vcf_file[:re.search("_ALL_qc.vcf.gz", vcf_file).span()[0]]
 ## Number of PEER factors
 Nk = config['PEERfactors']
 
-rule_all_inputs = ['output/qc/multiqc_report.html',
+rule_all_inputs = ['output/qc_noWASP/multiqc_report.html',
                     'config/config_reQTL_final.yaml',
-                    [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz', condition = ['ALL', 'CTL', 'FNF'])],
-                    [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz.tbi', condition = ['ALL', 'CTL', 'FNF'])],
-                    [expand('output/covar/{condition}_PEERfactors_k{Nk}.txt', condition = ['CTL', 'FNF'], Nk = Nk)],
-                    [expand('output/covar/{condition}_PEERfactors_k{Nk}_variance.txt', condition = ['CTL', 'FNF'], Nk = Nk)]]
+                    [expand('output/normquant/{condition}_noWASP_CPMadjTMM_invNorm.bed.gz', condition = ['ALL', 'CTL', 'FNF'])],
+                    [expand('output/normquant/{condition}_noWASP_CPMadjTMM_invNorm.bed.gz.tbi', condition = ['ALL', 'CTL', 'FNF'])],
+                    [expand('output/covar/{condition}_noWASP_PEERfactors_k{Nk}.txt', condition = ['CTL', 'FNF'], Nk = Nk)],
+                    [expand('output/covar/{condition}_noWASP_PEERfactors_k{Nk}_variance.txt', condition = ['CTL', 'FNF'], Nk = Nk)]]
 
         
 include: 'genoCovariate.smk'
 batches = ['RNAKitBatch', 'RNASequencingBatch', 'genoBatch', 'DNAKitBatch']
 
 if config['iteratePEER'] == 'TRUE':
-    filePrefix = '{condition}_PEER_k{Nk}_genoPC'
+    filePrefix = '{condition}_noWASP_PEER_k{Nk}_genoPC'
 else:
-    filePrefix = '{condition}_PEER_kneedle_genoPC'
+    filePrefix = '{condition}_noWASP_PEER_kneedle_genoPC'
 
 for b in batches:
     b_include = config[b]

@@ -145,7 +145,7 @@ if (condition == "CTL"){
     arrange(`#chr`, start)
   
   write_delim(CTL_CPMadjTMM_invNorm, 
-              file = "output/normquant/CTL_CPMadjTMM_invNorm.bed", 
+              file = "output/normquant/CTL_noWASP_CPMadjTMM_invNorm.bed", 
               delim = "\t")
   
 } else if (condition == "FNF"){
@@ -165,7 +165,7 @@ if (condition == "CTL"){
     arrange(`#chr`, start)
   
   write_delim(FNF_CPMadjTMM_invNorm, 
-              file = "output/normquant/FNF_CPMadjTMM_invNorm.bed", 
+              file = "output/normquant/FNF_noWASP_CPMadjTMM_invNorm.bed", 
               delim = "\t")
   
 } else if (condition == "ALL"){
@@ -182,6 +182,6 @@ if (condition == "CTL"){
     arrange(`#chr`, start)
   
   write_delim(CPMadjTMM_invNorm, 
-              file = "output/normquant/ALL_CPMadjTMM_invNorm.bed", 
+              file = "output/normquant/ALL_noWASP_CPMadjTMM_invNorm.bed", 
               delim = "\t")
 }
