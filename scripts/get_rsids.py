@@ -5,7 +5,8 @@ import sys
 qtl_results = sys.argv[1]
 dbSNP = sys.argv[2] # Path to dbSNP file directories
 prefix = sys.argv[3] # dbSNP file prefix
-outfile = sys.argv[4]
+suffix = sys.argv[4] # dbSNP file prefix
+outfile = sys.argv[5]
 
 # Read in QTL results and grab snp chromosome, position, and alleles with variantID
 qtl_pos = pd.read_csv(qtl_results)
@@ -22,7 +23,7 @@ for chr in range(1, 23):
     qtl_pos_chr = qtl_pos[qtl_pos['chr'] == 'chr' + str(chr)]
 
     # Read in dbSNP file for chr
-    dbSNP_chr = pd.read_csv(dbSNP + '/' + prefix + '_chr' + str(chr) + '.csv')
+    dbSNP_chr = pd.read_csv(dbSNP + '/' + prefix + '_chr' + str(chr) + '_' + suffix + '.csv')
     print('Successfully read in dbSNP file for chr' + str(chr))
     # Join qtl_pos_chr and dbSNP_chr trying to match alleles (both to ref and alt)
     qtl_dbSNP = pd.concat([qtl_pos_chr.merge(dbSNP_chr, how = 'left', 
@@ -37,11 +38,6 @@ for chr in range(1, 23):
 
     # Remove a1 and a2 columns 
     qtl_dbSNP_final = qtl_dbSNP_dedup.drop(columns = ['a1', 'a2'])
-
-
-    print(qtl_dbSNP_final.index)
-    print(qtl_dbSNP_final.loc[qtl_dbSNP_final['rsID'].isnull(), 'rsID'])
-    print(qtl_dbSNP_final.loc[qtl_dbSNP_final['rsID'].isnull(), 'variantID'])
 
 
     # Rename NA's to variantID and grab alleles

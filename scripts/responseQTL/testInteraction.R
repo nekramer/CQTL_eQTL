@@ -92,7 +92,8 @@ interactionResults <- apply(eGene_variants, 1, test_pair,
       qtl_formula = formula_qtl,
       interaction_formula = formula_interaction)
 names(interactionResults) <- paste0(eGene_variants$gene_id, "_", 
-                                    eGene_variants$variantID)
+                                    eGene_variants$variantID, "_",
+                                    eGene_variants$rsID)
 
 
 # Filter for significant hits
@@ -103,8 +104,8 @@ sig_interactionResults <- interactionResults %>% keep(~.$pval < threshold)
 sig_pvals <- lapply(sig_interactionResults, `[[`, "pval")
 reQTL_df <- tibble("ID" = names(sig_pvals),
                    "interaction_pval" = unlist(sig_pvals)) %>%
-  separate(ID, into = c("gene_id", "variantID"), sep = "_") %>%
-  left_join(eGene_variants, by = c("gene_id", "variantID"))
+  separate(ID, into = c("gene_id", "variantID", "rsID"), sep = "_") %>%
+  left_join(eGene_variants, by = c("gene_id", "variantID", "rsID"))
 
 
 # Save to output
