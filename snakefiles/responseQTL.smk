@@ -22,8 +22,10 @@ peerCov += ".csv"
 
 rule all:
     input:
+        'output/qtl/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD_rsID.csv'
         'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.rds',
         'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv'
+
 
 # Get rsIDs for significant lead variants
 rule sig_rsIDs:
@@ -230,7 +232,7 @@ rule get_reQTLs:
         normExpression = rna,
         covariates = rules.makePEERcovar_geno_ALL.output,
         vcf = rules.subsetVCF_leadvar.output,
-        eGene = rules.sig_rsIDs.output
+        eGene = rules.get_LDbuddy_rsIDs.output
     output:
         rds = 'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.rds',
         csv = 'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv'
