@@ -27,13 +27,14 @@ PEER_eQTL:
   memPerCpu: 8G
 PEER_nominal_eQTL:
   memPerCpu: 8G
-convert_perm_rsids:
-  memPerCpu: 16G
-convert_nominal_rsids:
-  memPerCpu: 32G
 
 
 verifybamid:
   memPerCpu: 64G
 multiqc:
   memPerCpu: 8G
+
+FNFsig_rsIDs:
+  memPerCpu: 32G
+CTLsig_rsIDs:
+  memPerCpu: 32G

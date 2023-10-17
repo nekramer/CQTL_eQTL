@@ -22,12 +22,14 @@ rule all:
     input:
         'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.rds',
         'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv',
+        'output/reQTL/FNF_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_rsids.csv',
+        'output/reQTL/CTL_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_rsids.csv'
 
 # Get significant eGenes
 rule sep_eGenes:
     input:
-        CTL_eQTL = config['eQTL_dir'] + 'CTL_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR_rsids.csv',
-        FNF_eQTL = config['eQTL_dir'] + 'FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR_rsids.csv'   
+        CTL_eQTL = config['eQTL_dir'] + 'CTL_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR.csv',
+        FNF_eQTL = config['eQTL_dir'] + 'FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_FDR.csv'   
     output:
         fnf_sigout = 'output/reQTL/FNF_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv',
         ctl_sigout = 'output/reQTL/CTL_sig_eGenes_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv'
@@ -55,8 +57,8 @@ rule FNFsig_rsIDs:
         dbSNP_prefix = config['dbSNP_prefix'],
         dbSNP_suffix = config['dbSNP_suffix']
     log:
-        out = 'output/logs/get_lead_rsIDs.out',
-        err = 'output/logs/get_lead_rsIDs.err'
+        out = 'output/logs/FNFsig_rsIDs.out',
+        err = 'output/logs/FNFsig_rsIDs.err'
     shell:
         """
         module load python/{params.version}
@@ -74,8 +76,8 @@ rule CTLsig_rsIDs:
         dbSNP_prefix = config['dbSNP_prefix'],
         dbSNP_suffix = config['dbSNP_suffix']
     log:
-        out = 'output/logs/get_lead_rsIDs.out',
-        err = 'output/logs/get_lead_rsIDs.err'
+        out = 'output/logs/CTLsig_rsIDs.out',
+        err = 'output/logs/CTLsig_rsIDs.err'
     shell:
         """
         module load python/{params.version}
