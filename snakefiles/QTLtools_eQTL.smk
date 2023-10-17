@@ -68,7 +68,6 @@ nomFilter = 'output/qtl/' + filePrefix + '_nom1Mb_filter.csv'
 nom_rsid = 'output/qtl/' + filePrefix + '_nom1Mb_final_rsids.csv'
 peerMultipleTestingFinal = 'output/qtl/' + filePrefix + '_perm1Mb_FDR.csv'
 peerMultipleTestingSig = 'output/qtl/' + filePrefix + '_perm1Mb_sig.csv'
-peerMultipleTestingSigrsID = 'output/qtl/' + filePrefix + '_perm1Mb_sig_rsID.csv'
 
 # Log files
 PEER_eQTL_out = 'output/logs/' + filePrefix + '_eQTL.out'
@@ -83,8 +82,6 @@ PEER_multipleTesting_perm_out_final = 'output/logs/' + filePrefix + '_eQTL_multi
 PEER_multipleTesting_perm_err_final = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm.err'
 PEER_multipleTestingSig_out = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_sig.out'
 PEER_multipleTestingSig_err = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_sig.err'
-PEER_multipleTestingrsID_out = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_rsID.out'
-PEER_multipleTestingrsID_err = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_rsID.err'
 
 
 
@@ -93,17 +90,13 @@ if config['iteratePEER'] == 'TRUE':
     rule_all_inputs.extend([[expand(peerQTL_perm, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
-    rule_all_inputs.extend([[expand(peerMultipleTestingFinal, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(peerMultipleTestingSig, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
-    rule_all_inputs.extend([[expand(peerMultipleTestingSigrsID, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
 else:
     rule_all_inputs.extend([[expand(peerCov, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(peerQTL_perm, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'])]])
-    rule_all_inputs.extend([[expand(peerMultipleTestingFinal, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(peerMultipleTestingSig, condition = ['CTL', 'FNF'])]])
-    rule_all_inputs.extend([[expand(peerMultipleTestingSigrsID, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand('output/covar/{condition}_PEERkneedle.txt', condition = ['CTL', 'FNF'])]])
 
 ## Define rules
@@ -226,28 +219,6 @@ rule sep_eGenes:
         module load r/{params.version}
         Rscript scripts/separate_eGenes.R {input} {params.threshold} {output} 1> {log.out} 2> {log.err}
         """ 
-
-# Get rsIDs for significant lead variants
-rule sig_rsIDs:
-    input:
-        rules.sep_eGenes.output
-    output:
-        peerMultipleTestingSigrsID
-    params:
-        version = config['pythonVersion'],
-        dbSNP_dir = config['dbSNP_dir'],
-        dbSNP_prefix = config['dbSNP_prefix'],
-        dbSNP_suffix = config['dbSNP_suffix']
-    log:
-        out = PEER_multipleTestingrsID_out,
-        err = PEER_multipleTestingrsID_err
-    shell:
-        """
-        module load python/{params.version}
-        python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {params.dbSNP_suffix} {output} 1> {log.out} 2> {log.err}
-        """
-    
-# Get LD buddies for significant lead variants
 
 # Populate config file for response QTL workflow
 rule update_reQTL:

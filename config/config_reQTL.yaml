@@ -3,6 +3,10 @@ samplesheet: 'samplesheet.csv' # RNA
 donorSamplesheet: 'donorSamplesheet.csv' # donor information
 dnaSamplesheet: 'dnaSamplesheet.csv' # DNA
 
+dbSNP_dir: '/work/users/n/e/nekramer/References/GRCh38.p13/dbSNP/'
+dbSNP_prefix: 'dbSNP155.GRCh38.p13'
+dbSNP_suffix: 'noindels'
+
 # Which number of PEER factors to use
 PEERfactors: 10
 
