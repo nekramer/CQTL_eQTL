@@ -6,8 +6,7 @@ dnaSamplesheet: 'dnaSamplesheet.csv' # DNA
 # Which number of PEER factors to use
 PEERfactors: 10
 
-## Multiple testing correction type and threshold
-correction: 'qval' # Which multiple testing method to filter on; 'FDR' is Benjamini-Hochberg and 'qval' is Storey Tibshirani qvalue
+## Multiple testing correction threshold
 FDRthreshold: 0.05
 
 ## Software versions
@@ -15,9 +14,7 @@ Rversion: "4.2.2"
 gatkVersion: "4.2.5.0"
 pythonVersion: "3.9.6"
 
-dbSNP_dir: '/work/users/n/e/nekramer/References/GRCh38.p13/dbSNP/'
-dbSNP_prefix: 'dbSNP155.GRCh38.p13'
-dbSNP_suffix: 'noindels'
+
 
 ## To be updated by eQTL pipeline
 # Path to permutation pass eQTLs, with multiple testing correction p-value columns

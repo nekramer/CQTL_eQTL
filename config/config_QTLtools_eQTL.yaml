@@ -22,13 +22,12 @@ chromSizes: '/proj/phanstiel_lab/References/genomes/GENCODE.GRCh38.p13/STAR_idx/
 sequence: '/proj/phanstiel_lab/References/genomes/GENCODE.GRCh38.p13/Sequence/GRCh38.p13.genome.fa.gz'
 dbSNP_dir: '/work/users/n/e/nekramer/References/GRCh38.p13/dbSNP/'
 dbSNP_prefix: 'dbSNP155.GRCh38.p13'
-
+dbSNP_suffix: 'noindels'
 
 ## Salmon options
 salmon: '/proj/seq/data/salmon_RNAseq_genomes/hg38_cdna/salmon_index/default' # Path to salmon index.
 gcBias: 'TRUE'
 seqBias: 'TRUE'
-
 
 ## Software versions
 QTLToolsVersion: "1.3.1"
@@ -47,16 +46,14 @@ picardVersion: "2.26.11"
 # Software paths
 verifybamid: '/work/users/n/e/nekramer/software/verifyBamID_1.1.3/verifyBamID/bin/verifyBamID'
 
-
 ## Covariate parameters
-RNAKitBatch: 'TRUE'
+RNAKitBatch: 'FALSE'
 RNASequencingBatch: 'FALSE'
 genoBatch: 'FALSE'
-DNAKitBatch: 'TRUE'
+DNAKitBatch: 'FALSE'
 PEERfactors: 50 # Maximum number of PEER factors
 iteratePEER: 'TRUE' # If TRUE, will try different numbers of PEER factors until maximum, in iterations of iterateBy. If FALSE, will use kneedle to determine number of PEER factors to include from max.
 iterateBy: 1 # If iteratePEER is TRUE, will try different numbers of PEER factors until maximum, in this number of iterations.
-
 
 ## Signficance threshold
 FDRthreshold: 0.05
