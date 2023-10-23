@@ -48,6 +48,7 @@ inverseNormGene <- function(geneRow){
                             na.last = "keep") - 0.5)/sum(!is.na(as.numeric(geneRow))))
   return(normValues)
 }
+
 # READ IN ---------------------------------------------------------------------
 args <- commandArgs(trailingOnly = TRUE)
 samplesheet <- args[1]
@@ -76,16 +77,8 @@ gse <- summarizeToGene(se)
 
 # Filter out lowly expressed genes ---------------------------------------------
 
-# At least 10 counts in more than 5% of samples from condition
-if (condition == "CTL"){
-  gse_subset <-  gse[, gse$Condition == "CTL"]
-  keep <- rowSums(assay(gse_subset) >= 10) >= ceiling(ncol(colData(gse_subset))*0.05)
-} else if (condition == "FNF"){
-  gse_subset <-  gse[, gse$Condition == "FNF"]
-  keep <- rowSums(assay(gse_subset) >= 10) >= ceiling(ncol(colData(gse_subset))*0.05)
-} else {
-  keep <- rowSums(assay(gse) >= 10) >= ceiling(ncol(colData(gse))*0.10)
-}
+# At least 10 counts in more than 5% of samples from all
+keep <- rowSums(assay(gse) >= 10) >= ceiling(nrow(colData(gse))*0.05)
 
 gse_filtered <- gse[keep,]
 
@@ -101,7 +94,8 @@ gene_info <- as.data.frame(rowRanges(gse_filtered)) |>
   # Filter out pseudogenes
   filter(!str_detect(gene_biotype, "pseudogene")) |> 
   dplyr::select(-gene_biotype) |> 
-  mutate(seqnames = paste0("chr", seqnames))
+  mutate(seqnames = paste0("chr", seqnames)) |> 
+  mutate(length = end - start)
 
 
 # Get TSS for each gene ---------------------------------------------------
@@ -120,8 +114,9 @@ gene_info$start <- as.numeric(tss)
 gene_info <- gene_info |> 
   # Filter any NA
   filter(!is.na(start)) |>
-  # Update ennd
+  # Update end
   mutate(end = start + 1) |>
+  #mutate(end = start + length) |> 
   # Remove transcript column 
   dplyr::select(-tx_ids)
 
@@ -139,14 +134,14 @@ if (condition == "CTL"){
   colnames(CTL_CPMadjTMM_invNorm) <- c("gene_id", colnames(CTL_CPMadjTMM))
   
   # Join with gene info
-  CTL_CPMadjTMM_invNorm <- CTL_CPMadjTMM_invNorm %>% left_join(gene_info) %>%
-    relocate(seqnames, start, end, gene_id, gene_name, strand) %>%
-    rename("seqnames" = "#chr") %>%
-    arrange(`#chr`, start)
-  
-  write_delim(CTL_CPMadjTMM_invNorm, 
-              file = "output/normquant/CTL_noWASP_CPMadjTMM_invNorm.bed", 
-              delim = "\t")
+  CTL_CPMadjTMM_invNorm <- CTL_CPMadjTMM_invNorm |>  
+    left_join(gene_info, by = "gene_id") |> 
+    dplyr::select(-gene_name) |> 
+    relocate(seqnames, start, end, gene_id, length, strand) |> 
+    dplyr::rename(`#chr` = seqnames) |> 
+    arrange(`#chr`, start) |>
+    write_delim(file = "output/normquant/CTL_CPMadjTMM_invNorm.bed", 
+                delim = "\t")
   
 } else if (condition == "FNF"){
   # Grab FNF
@@ -159,29 +154,29 @@ if (condition == "CTL"){
   colnames(FNF_CPMadjTMM_invNorm) <- c("gene_id", colnames(FNF_CPMadjTMM))
   
   # Join with gene info
-  FNF_CPMadjTMM_invNorm <- FNF_CPMadjTMM_invNorm %>% left_join(gene_info) %>%
-    relocate(seqnames, start, end, gene_id, gene_name, strand) %>%
-    rename("seqnames" = "#chr") %>%
-    arrange(`#chr`, start)
-  
-  write_delim(FNF_CPMadjTMM_invNorm, 
-              file = "output/normquant/FNF_noWASP_CPMadjTMM_invNorm.bed", 
+  FNF_CPMadjTMM_invNorm <- FNF_CPMadjTMM_invNorm |>  
+    left_join(gene_info, by = "gene_id") |> 
+    dplyr::select(-gene_name) |> 
+    relocate(seqnames, start, end, gene_id, length, strand) |> 
+    dplyr::rename(`#chr` = seqnames) |> 
+    arrange(`#chr`, start) |>
+    write_delim(file = "output/normquant/FNF_CPMadjTMM_invNorm.bed", 
               delim = "\t")
   
 } else if (condition == "ALL"){
   
-  # Inverse normalize
+  # Inverse normalize across all data
   CPMadjTMM_invNorm <- as.data.frame(t(apply(CQTL_CPMadjTMM, 1, inverseNormGene))) %>%
     rownames_to_column("gene_id")
   colnames(CPMadjTMM_invNorm) <- c("gene_id", colnames(CQTL_CPMadjTMM))
   
   # Join with gene info
-  CPMadjTMM_invNorm <- CPMadjTMM_invNorm %>% left_join(gene_info) %>%
-    relocate(seqnames, start, end, gene_id, gene_name, strand) %>%
-    rename("seqnames" = "#chr") %>%
-    arrange(`#chr`, start)
-  
-  write_delim(CPMadjTMM_invNorm, 
-              file = "output/normquant/ALL_noWASP_CPMadjTMM_invNorm.bed", 
+  CPMadjTMM_invNorm <- CPMadjTMM_invNorm |> 
+    left_join(gene_info, by = "gene_id") |> 
+    dplyr::select(-gene_name) |> 
+    relocate(seqnames, start, end, gene_id, length, strand) |> 
+    dplyr::rename(`#chr` = seqnames) |> 
+    arrange(`#chr`, start) |>
+    write_delim(file = "output/normquant/ALL_CPMadjTMM_invNorm.bed", 
               delim = "\t")
 }

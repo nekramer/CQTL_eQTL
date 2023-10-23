@@ -41,7 +41,7 @@ runPEER <- function(Nk, data, prefix){
 
 # Read in data
 expressionData <- read_delim(args[1]) %>%
-  dplyr::select(-`#chr`, -start, -end, -strand, -gene_name) %>%
+  dplyr::select(-`#chr`, -start, -end, -strand, -length) %>%
   t() %>% as.data.frame() %>% row_to_names(row_number = 1) %>%
   mutate(across(where(is.character), as.numeric)) %>%
   as.matrix()
