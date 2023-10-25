@@ -10,7 +10,7 @@ outFile <- args[3]
 sig_eGenes <- read_csv(permData) |> 
   filter(qval < threshold) |> 
   distinct(gene_id, .keep_all = TRUE) |> 
-  dplyr::select(gene_id, gene_name, gene_chr, gene_start, gene_end, gene_strand,
+  dplyr::select(gene_id, gene_symbol, gene_chr, gene_start, gene_end, gene_strand,
                 variantID, variant_chr, variant_start, variant_end, beta, qval)
 
 

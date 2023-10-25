@@ -187,8 +187,7 @@ rule nominal_Filter:
 # Add multiple testing correction to permutation pass lead variants/eGenes 
 rule PEER_multipleTesting_perm:
     input:
-        qtlResult = peerQTL_perm,
-        geneInfo = rules.indexQuant_Condition.output.bed
+        qtlResult = peerQTL_perm
     output:
         peerMultipleTestingFinal 
     params:
@@ -199,7 +198,7 @@ rule PEER_multipleTesting_perm:
     shell:
         """
         module load r/{params.version}
-        Rscript scripts/correctQTLs.R {input.qtlResult} {input.geneInfo} {output} 1> {log.out} 2> {log.err}
+        Rscript scripts/correctQTLs.R {input.qtlResult} {output} 1> {log.out} 2> {log.err}
         """
 
 # Get significant eGenes

@@ -1,19 +1,33 @@
 #!/usr/bin/R
 library(tidyverse)
 library(qvalue)
+library(org.Hs.eg.db)
 source("scripts/utils.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 qtlData <- readQTLtools_perm(args[1])
-geneInfo <- read_delim(args[2], delim = "\t", 
-                       col_select = c("gene_id", "gene_name"))
-outputFile <- args[3]
+outputFile <- args[2]
 
-# Filter for non-NA and add column with q-values and column with FDR values
-qtlData <- qtlData[!is.na(qtlData$adj_beta_pval),] %>% 
-  mutate("qval" = qvalue(adj_beta_pval)$qvalue) %>%
-  mutate("FDR" = p.adjust(adj_beta_pval, method = "BH")) %>%
-  # Join with geneInfo to get gene_name
-  left_join(geneInfo) %>%
+# Need to get gene names
+
+# Filter for non-NA and add column with corrected q-values
+qtlData <- qtlData[!is.na(qtlData$adj_beta_pval),] |> 
+  mutate("qval" = qvalue(adj_beta_pval)$qvalue)
+
+
+# Get gene names from orgDb
+gene_names <- AnnotationDbi::select(org.Hs.eg.db, keys = qtlData$gene_id,
+                      columns = c("ENSEMBL", "SYMBOL"),
+                      keytype = "ENSEMBL") |> 
+  dplyr::rename(gene_id = ENSEMBL) |> 
+  # Collapse gene_id with many symbol mappings
+  group_by(gene_id) |> 
+  summarise(gene_symbol = paste(SYMBOL, collapse = ",")) |> 
+  ungroup()
+
+# Join and write to output
+qtlData |> 
+  left_join(gene_names, by = "gene_id") |> 
+  relocate(gene_symbol, .after = gene_id) |> 
   # Write to file
   write_csv(file = outputFile)
