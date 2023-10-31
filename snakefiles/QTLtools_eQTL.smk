@@ -64,10 +64,16 @@ peerCov = 'output/covar/' + filePrefix + '.txt'
 peerQTL_perm = 'output/qtl/' + filePrefix + '_perm1Mb.txt'
 peerQTL_nominal = 'output/qtl/' + filePrefix + '_nom1Mb.txt'
 nomThreshold = 'output/qtl/' + filePrefix + '_nom1Mb_thresholds.csv'
-nomFilter = 'output/qtl/' + filePrefix + '_nom1Mb_filter.csv'
-nom_rsid = 'output/qtl/' + filePrefix + '_nom1Mb_final_rsids.csv'
+nomFilter_prefix = 'output/qtl/' + filePrefix + '_nom1Mb'
+nomFilter = 'output/qtl/' + filePrefix + '_nom1Mb_chr{chr}.csv'
 peerMultipleTestingFinal = 'output/qtl/' + filePrefix + '_perm1Mb_FDR.csv'
 peerMultipleTestingSig = 'output/qtl/' + filePrefix + '_perm1Mb_sig.csv'
+
+
+if config['iteratePEER'] == 'TRUE':
+    nomFilter_final = [expand(nomFilter, condition = '{condition}', Nk = '{Nk}', chr = c) for c in range(1, 23)]
+else:
+    nomFilter_final = [expand(nomFilter, condition = '{condition}', chr = c) for c in range(1, 23)]
 
 # Log files
 PEER_eQTL_out = 'output/logs/' + filePrefix + '_eQTL.out'
@@ -83,19 +89,19 @@ PEER_multipleTesting_perm_err_final = 'output/logs/' + filePrefix + '_eQTL_multi
 PEER_multipleTestingSig_out = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_sig.out'
 PEER_multipleTestingSig_err = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_sig.err'
 
-
-
 if config['iteratePEER'] == 'TRUE':
     rule_all_inputs.extend([[expand(peerCov, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(peerQTL_perm, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(peerMultipleTestingSig, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
+    rule_all_inputs.extend([[expand(nomFilter, condition = ['CTL', 'FNF'], Nk = n, chr = c) for n in range(1, Nk + 1, config['iterateBy']) for c in range(1, 23)]])
 else:
     rule_all_inputs.extend([[expand(peerCov, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(peerQTL_perm, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'])]])
+    rule_all_inputs.extend([[expand(nomFilter, condition = ['CTL', 'FNF'], chr = c) for c in range(1, 23)]])
     rule_all_inputs.extend([[expand(peerMultipleTestingSig, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand('output/covar/{condition}_PEERkneedle.txt', condition = ['CTL', 'FNF'])]])
 
@@ -166,22 +172,23 @@ rule get_nomThreshold:
         Rscript scripts/get_nomThreshold.R {input.permData} {params.FDRthreshold} {output} 1> {log.out} 2> {log.err}
         """
 
-# Filtering nominal variants based on nominal threshold
+# Filtering nominal variants based on nominal threshold and split to separate files by chromosome
 rule nominal_Filter:
     input:
         nomData = rules.PEER_nominal_eQTL.output,
         nomThreshold = rules.get_nomThreshold.output
     output:
-        nomFilter
+        nomFilter_final
     params:
-        version = config['pythonVersion']
+        version = config['pythonVersion'],
+        prefix = nomFilter_prefix
     log:
         out = nomFilter_out,
         err = nomFilter_err
     shell:
         """
         module load python/{params.version}
-        python3 scripts/correct_nomQTLs.py {input.nomData} {input.nomThreshold} {output} 1> {log.out} 2> {log.err}
+        python3 scripts/correct_nomQTLs.py {input.nomData} {input.nomThreshold} {params.prefix} 1> {log.out} 2> {log.err}
         """
 
 # Add multiple testing correction to permutation pass lead variants/eGenes 
@@ -256,5 +263,3 @@ rule update_reQTL:
         # Write to new updated config info
         with open('config/config_reQTL_final.yaml', 'w') as f:
             yaml.dump(reqtl_config, f)
-
-# Implement conditional pass?
