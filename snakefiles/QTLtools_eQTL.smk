@@ -64,6 +64,7 @@ peerCov = 'output/covar/' + filePrefix + '.txt'
 peerQTL_perm = 'output/qtl/' + filePrefix + '_perm1Mb.txt'
 peerQTL_nominal = 'output/qtl/' + filePrefix + '_nom1Mb.txt'
 nomThreshold = 'output/qtl/' + filePrefix + '_nom1Mb_thresholds.csv'
+nomSplit = 'output/qtl/' + filePrefix + 'nom1Mb_chr{chr}.txt'
 nomFilter_prefix = 'output/qtl/' + filePrefix + '_nom1Mb'
 nomFilter = 'output/qtl/' + filePrefix + '_nom1Mb_chr{chr}.csv'
 peerMultipleTestingFinal = 'output/qtl/' + filePrefix + '_perm1Mb_FDR.csv'
@@ -82,8 +83,10 @@ PEER_nominal_eQTL_out = 'output/logs/' + filePrefix + '_nominal_eQTL.out'
 PEER_nominal_eQTL_err = 'output/logs/' + filePrefix + '_nominal_eQTL.err'
 get_nomThreshold_out = 'output/logs/' + filePrefix + '_nomThreshold.out'
 get_nomThreshold_err = 'output/logs/' + filePrefix + '_nomThreshold.err'
-nomFilter_out = 'output/logs/' + filePrefix + '_nomFilter.out'
-nomFilter_err = 'output/logs/' + filePrefix + '_nomFilter.err'
+nomFilter_out = 'output/logs/' + filePrefix + '_nomFilter_chr{chr}.out'
+nomFilter_err = 'output/logs/' + filePrefix + '_nomFilter_chr{chr}.err'
+nomSplit_out = 'output/logs/' + filePrefix + '_nomSplit_chr{chr}.out'
+nomSplit_err = 'output/logs/' + filePrefix + '_nomSplit_chr{chr}.err'
 PEER_multipleTesting_perm_out_final = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm.out'
 PEER_multipleTesting_perm_err_final = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm.err'
 PEER_multipleTestingSig_out = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_sig.out'
@@ -172,13 +175,73 @@ rule get_nomThreshold:
         Rscript scripts/get_nomThreshold.R {input.permData} {params.FDRthreshold} {output} 1> {log.out} 2> {log.err}
         """
 
-# Filtering nominal variants based on nominal threshold and split to separate files by chromosome
+rule splitNom:
+    input:
+        rules.PEER_nominal_eQTL.output
+    output:
+        nomSplit
+    log:
+        out = nomSplit_out,
+        err = nomSplit_err
+    shell:
+        """
+        prefix=`basename {input} .txt`
+        if [wildcards.chr == 1]; then
+            awk '{if ($2 == "chr1"){print;}}' {input} > ${prefix}_chr1.txt
+        elif [wildcards.chr == 2]; then
+            awk '{if ($2 == "chr2"){print;}}' {input} > ${prefix}_chr2.txt
+        elif [wildcards.chr == 3]; then
+            awk '{if ($2 == "chr3"){print;}}' {input} > ${prefix}_chr3.txt
+        elif [wildcards.chr == 4]; then
+            awk '{if ($2 == "chr4"){print;}}' {input} > ${prefix}_chr4.txt
+        elif [wildcards.chr == 5]; then
+            awk '{if ($2 == "chr5"){print;}}' {input} > ${prefix}_chr5.txt
+        elif [wildcards.chr == 6]; then
+            awk '{if ($2 == "chr6"){print;}}' {input} > ${prefix}_chr6.txt
+        elif [wildcards.chr == 7]; then
+            awk '{if ($2 == "chr7"){print;}}' {input} > ${prefix}_chr7.txt
+        elif [wildcards.chr == 8]; then
+            awk '{if ($2 == "chr8"){print;}}' {input} > ${prefix}_chr8.txt
+        elif [wildcards.chr == 9]; then
+            awk '{if ($2 == "chr9"){print;}}' {input} > ${prefix}_chr9.txt
+        elif [wildcards.chr == 10]; then
+            awk '{if ($2 == "chr10"){print;}}' {input} > ${prefix}_chr10.txt
+        elif [wildcards.chr == 11]; then
+            awk '{if ($2 == "chr11"){print;}}' {input} > ${prefix}_chr11.txt
+        elif [wildcards.chr == 12]; then
+            awk '{if ($2 == "chr12"){print;}}' {input} > ${prefix}_chr12.txt
+        elif [wildcards.chr == 13]; then
+            awk '{if ($2 == "chr13"){print;}}' {input} > ${prefix}_chr13.txt
+        elif [wildcards.chr == 14]; then
+            awk '{if ($2 == "chr14"){print;}}' {input} > ${prefix}_chr14.txt
+        elif [wildcards.chr == 15]; then
+            awk '{if ($2 == "chr15"){print;}}' {input} > ${prefix}_chr15.txt
+        elif [wildcards.chr == 16]; then
+            awk '{if ($2 == "chr16"){print;}}' {input} > ${prefix}_chr16.txt
+        elif [wildcards.chr == 17]; then
+            awk '{if ($2 == "chr17"){print;}}' {input} > ${prefix}_chr17.txt
+        elif [wildcards.chr == 18]; then
+            awk '{if ($2 == "chr18"){print;}}' {input} > ${prefix}_chr18.txt
+        elif [wildcards.chr == 19]; then
+            awk '{if ($2 == "chr19"){print;}}' {input} > ${prefix}_chr19.txt
+        elif [wildcards.chr == 20]; then
+            awk '{if ($2 == "chr20"){print;}}' {input} > ${prefix}_chr20.txt
+         elif [wildcards.chr == 21]; then
+            awk '{if ($2 == "chr21"){print;}}' {input} > ${prefix}_chr21.txt
+         elif [wildcards.chr == 22]; then
+            awk '{if ($2 == "chr22"){print;}}' {input} > ${prefix}_chr22.txt
+        fi
+
+        """
+
+
+# Adding nominal filter to split nominal results
 rule nominal_Filter:
     input:
-        nomData = rules.PEER_nominal_eQTL.output,
+        nomData = rules.splitNom.output,
         nomThreshold = rules.get_nomThreshold.output
     output:
-        nomFilter_final
+        nomFilter
     params:
         version = config['pythonVersion'],
         prefix = nomFilter_prefix
@@ -188,7 +251,7 @@ rule nominal_Filter:
     shell:
         """
         module load python/{params.version}
-        python3 scripts/correct_nomQTLs.py {input.nomData} {input.nomThreshold} {params.prefix} 1> {log.out} 2> {log.err}
+        python3 scripts/correct_nomQTLs.py {input.nomData} {input.nomThreshold} {params.prefix} {wildcard.chr} 1> {log.out} 2> {log.err}
         """
 
 # Add multiple testing correction to permutation pass lead variants/eGenes 
