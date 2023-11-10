@@ -56,7 +56,7 @@ rule sig_rsIDs:
     shell:
         """
         module load python/{params.version}
-        python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {params.dbSNP_suffix} 'lead' {output} 1> {log.out} 2> {log.err}
+        python3 scripts/responseQTL/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {params.dbSNP_suffix} 'lead' {output} 1> {log.out} 2> {log.err}
         """
 
 # Get rsIDs for nominal results
@@ -136,7 +136,7 @@ rule reformat_sigLDbuddies:
     shell:
         """
         module load r/{params.version}
-        Rscript scripts/reformat_LDbuddies.R {input.leads} {input.buddies} {wildcards.snp} {output} 1> {log.out} 2> log.err
+        Rscript scripts/responseQTL/reformat_LDbuddies.R {input.leads} {input.buddies} {wildcards.snp} {output} 1> {log.out} 2> log.err
         """
 
 rule join_sigLDbuddies:

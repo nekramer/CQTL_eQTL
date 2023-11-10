@@ -98,5 +98,5 @@ rule makePEERcovar_geno:
         module load r/{params.version}
         numgenoPCs=`cat {input.numgenoPCs}`
 
-        Rscript scripts/formatPEERcovariates_geno.R {input.peer} {params.numPEER} {params.donorSamplesheet} {params.dnaSamplesheet} {params.genoBatch} {params.DNAKitBatch} {params.samplesheet} {params.RNAKitBatch} {params.RNASequencingBatch} {wildcards.condition} {input.genoPC} ${{numgenoPCs}} {output} 1> {log.out} 2> {log.err}
+        Rscript scripts/eQTL/formatPEERcovariates_geno.R {input.peer} {params.numPEER} {params.donorSamplesheet} {params.dnaSamplesheet} {params.genoBatch} {params.DNAKitBatch} {params.samplesheet} {params.RNAKitBatch} {params.RNASequencingBatch} {wildcards.condition} {input.genoPC} ${{numgenoPCs}} {output} 1> {log.out} 2> {log.err}
         """

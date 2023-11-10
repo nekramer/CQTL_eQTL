@@ -43,7 +43,7 @@ rule renameVCFdonors:
         module load samtools/{params.samtoolsVersion}
         module load python/{params.pythonVersion}
         bcftools query -l {input.vcf} > donors.txt
-        python3 scripts/renameVCFdonors.py donors.txt 1> {log.pythonOut} 2> {log.pythonErr}
+        python3 scripts/eQTL/renameVCFdonors.py donors.txt 1> {log.pythonOut} 2> {log.pythonErr}
         bcftools reheader -s samples.txt {input.vcf} > output/vcf/{params.prefix}_rename.vcf 2> {log.bcftoolsErr}
         bgzip output/vcf/{params.prefix}_rename.vcf && tabix -p vcf {output.vcf}
         rm donors.txt
@@ -71,7 +71,7 @@ rule subsetVCFdonors:
         module load samtools/{params.samtoolsVersion}
         module load python/{params.pythonVersion}
         bcftools query -l {input.vcf} > donors.txt
-        python3 scripts/subsetVCFdonors.py donors.txt {params.donors} 1> {log.pythonOut} 2> {log.pythonErr}
+        python3 scripts/eQTL/subsetVCFdonors.py donors.txt {params.donors} 1> {log.pythonOut} 2> {log.pythonErr}
         bcftools view -S subset.txt {input.vcf} > output/vcf/{params.prefix}_subset.vcf 2> {log.bcftoolsErr}
         rm donors.txt
         rm subset.txt
@@ -204,26 +204,26 @@ rule addReadGroups:
         samtools index -@ {threads} {output.bam} {output.bai} 2> {log.err2}
         """
 
-# rule verifybamid:
-#     input:
-#         vcf = rules.filterVCFvariants.output.vcf,
-#         bam = rules.addReadGroups.output.bam,
-#         bai = rules.addReadGroups.output.bai
-#     output:
-#         selfSM = 'output/qc/{group}_verifybamid.selfSM',
-#         selfRG = 'output/qc/{group}_verifybamid.selfRG',
-#         bestRG = 'output/qc/{group}_verifybamid.bestRG',
-#         bestSM = 'output/qc/{group}_verifybamid.bestSM',
-#         depthRG = 'output/qc/{group}_verifybamid.depthRG',
-#         depthSM = 'output/qc/{group}_verifybamid.depthSM'
-#     params:
-#         verifybamid = config['verifybamid']
-#     log:
-#         err = 'output/logs/verifybamid_{group}.err'
-#     shell:
-#         """
-#         {params.verifybamid} --vcf {input.vcf} --bam {input.bam} --best --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
-#         """
+rule verifybamid:
+    input:
+        vcf = rules.filterVCFvariants.output.vcf,
+        bam = rules.addReadGroups.output.bam,
+        bai = rules.addReadGroups.output.bai
+    output:
+        selfSM = 'output/qc/{group}_verifybamid.selfSM',
+        selfRG = 'output/qc/{group}_verifybamid.selfRG',
+        bestRG = 'output/qc/{group}_verifybamid.bestRG',
+        bestSM = 'output/qc/{group}_verifybamid.bestSM',
+        depthRG = 'output/qc/{group}_verifybamid.depthRG',
+        depthSM = 'output/qc/{group}_verifybamid.depthSM'
+    params:
+        verifybamid = config['verifybamid']
+    log:
+        err = 'output/logs/verifybamid_{group}.err'
+    shell:
+        """
+        {params.verifybamid} --vcf {input.vcf} --bam {input.bam} --best --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
+        """
 
 rule quant:
     input:
@@ -254,26 +254,26 @@ rule quant:
         fi
         """
 
-# rule multiqc:
-#     input:
-#         [expand('output/qc/{group}_{R}_fastqc.zip', group = key, R = ['R1', 'R2']) for key in read1],
-#         [expand('output/{group}/trim/{group}_{R}.fastq.gz_trimming_report.txt', group = key, R =['R1', 'R2']) for key in read1],
-#         [expand('output/{group}/align/{group}.Log.final.out', group = key) for key in read1],
-#         [expand('output/quant/{group}/quant.sf', group = key) for key in read1],
-#         [expand('output/qc/{group}_verifybamid.selfSM', group = key) for key in read1],
-#         rules.bcftools_stats.output
-#     output:
-#         'output/qc/multiqc_report.html'
-#     params:
-#         version = config['multiqcVersion']
-#     log:
-#         out = 'output/logs/multiqc.out',
-#         err = 'output/logs/multiqc.err'
-#     shell:
-#         """
-#         module load multiqc/{params.version}
-#         multiqc -f -o output/qc . 1> {log.out} 2> {log.err}
-#         """
+rule multiqc:
+    input:
+        [expand('output/qc/{group}_{R}_fastqc.zip', group = key, R = ['R1', 'R2']) for key in read1],
+        [expand('output/{group}/trim/{group}_{R}.fastq.gz_trimming_report.txt', group = key, R =['R1', 'R2']) for key in read1],
+        [expand('output/{group}/align/{group}.Log.final.out', group = key) for key in read1],
+        [expand('output/quant/{group}/quant.sf', group = key) for key in read1],
+        [expand('output/qc/{group}_verifybamid.selfSM', group = key) for key in read1],
+        rules.bcftools_stats.output
+    output:
+        'output/qc/multiqc_report.html'
+    params:
+        version = config['multiqcVersion']
+    log:
+        out = 'output/logs/multiqc.out',
+        err = 'output/logs/multiqc.err'
+    shell:
+        """
+        module load multiqc/{params.version}
+        multiqc -f -o output/qc . 1> {log.out} 2> {log.err}
+        """
     
 rule quantNorm_Condition:
     input:
@@ -289,7 +289,7 @@ rule quantNorm_Condition:
     shell:
         """
         module load r/{params.version}
-        Rscript scripts/quantNorm.R {params.samplesheet} {wildcards.condition} {input} 1> {log.out} 2> {log.err}
+        Rscript scripts/eQTL/quantNorm.R {params.samplesheet} {wildcards.condition} {input} 1> {log.out} 2> {log.err}
         """
 
 rule quantNorm_All:
@@ -306,7 +306,7 @@ rule quantNorm_All:
     shell:
         """
         module load r/{params.version}
-        Rscript scripts/quantNorm.R {params.samplesheet} ALL {input} 1> {log.out} 2> {log.err}
+        Rscript scripts/eQTL/quantNorm.R {params.samplesheet} ALL {input} 1> {log.out} 2> {log.err}
         """
 
 rule indexQuant_Condition:
@@ -359,5 +359,5 @@ rule getPEER:
     shell:
         """
         module load r/4.2.2
-        Rscript scripts/PEERfactors.R {input} {wildcards.condition} {wildcards.Nk} FALSE {params.iterateBy} 1> {log.out} 2> {log.err}
+        Rscript scripts/eQTL/PEERfactors.R {input} {wildcards.condition} {wildcards.Nk} FALSE {params.iterateBy} 1> {log.out} 2> {log.err}
         """

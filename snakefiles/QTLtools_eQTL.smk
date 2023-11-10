@@ -172,7 +172,7 @@ rule get_nomThreshold:
     shell:
         """
         module load r/{params.version}
-        Rscript scripts/get_nomThreshold.R {input.permData} {params.FDRthreshold} {output} 1> {log.out} 2> {log.err}
+        Rscript scripts/eQTL/get_nomThreshold.R {input.permData} {params.FDRthreshold} {output} 1> {log.out} 2> {log.err}
         """
 
 rule splitNom:
@@ -186,49 +186,49 @@ rule splitNom:
     shell:
         """
         prefix=`basename {input} .txt`
-        if [wildcards.chr == 1]; then
+        if [ wildcards.chr == 1 ]; then
             awk '{if ($2 == "chr1"){print;}}' {input} > ${prefix}_chr1.txt
-        elif [wildcards.chr == 2]; then
+        elif [ wildcards.chr == 2 ]; then
             awk '{if ($2 == "chr2"){print;}}' {input} > ${prefix}_chr2.txt
-        elif [wildcards.chr == 3]; then
+        elif [ wildcards.chr == 3 ]; then
             awk '{if ($2 == "chr3"){print;}}' {input} > ${prefix}_chr3.txt
-        elif [wildcards.chr == 4]; then
+        elif [ wildcards.chr == 4 ]; then
             awk '{if ($2 == "chr4"){print;}}' {input} > ${prefix}_chr4.txt
-        elif [wildcards.chr == 5]; then
+        elif [ wildcards.chr == 5 ]; then
             awk '{if ($2 == "chr5"){print;}}' {input} > ${prefix}_chr5.txt
-        elif [wildcards.chr == 6]; then
+        elif [ wildcards.chr == 6 ]; then
             awk '{if ($2 == "chr6"){print;}}' {input} > ${prefix}_chr6.txt
-        elif [wildcards.chr == 7]; then
+        elif [ wildcards.chr == 7 ]; then
             awk '{if ($2 == "chr7"){print;}}' {input} > ${prefix}_chr7.txt
-        elif [wildcards.chr == 8]; then
+        elif [ wildcards.chr == 8 ]; then
             awk '{if ($2 == "chr8"){print;}}' {input} > ${prefix}_chr8.txt
-        elif [wildcards.chr == 9]; then
+        elif [ wildcards.chr == 9 ]; then
             awk '{if ($2 == "chr9"){print;}}' {input} > ${prefix}_chr9.txt
-        elif [wildcards.chr == 10]; then
+        elif [ wildcards.chr == 10 ]; then
             awk '{if ($2 == "chr10"){print;}}' {input} > ${prefix}_chr10.txt
-        elif [wildcards.chr == 11]; then
+        elif [ wildcards.chr == 11 ]; then
             awk '{if ($2 == "chr11"){print;}}' {input} > ${prefix}_chr11.txt
-        elif [wildcards.chr == 12]; then
+        elif [ wildcards.chr == 12 ]; then
             awk '{if ($2 == "chr12"){print;}}' {input} > ${prefix}_chr12.txt
-        elif [wildcards.chr == 13]; then
+        elif [ wildcards.chr == 13 ]; then
             awk '{if ($2 == "chr13"){print;}}' {input} > ${prefix}_chr13.txt
-        elif [wildcards.chr == 14]; then
+        elif [ wildcards.chr == 14 ]; then
             awk '{if ($2 == "chr14"){print;}}' {input} > ${prefix}_chr14.txt
-        elif [wildcards.chr == 15]; then
+        elif [ wildcards.chr == 15 ]; then
             awk '{if ($2 == "chr15"){print;}}' {input} > ${prefix}_chr15.txt
-        elif [wildcards.chr == 16]; then
+        elif [ wildcards.chr == 16 ]; then
             awk '{if ($2 == "chr16"){print;}}' {input} > ${prefix}_chr16.txt
-        elif [wildcards.chr == 17]; then
+        elif [ wildcards.chr == 17 ]; then
             awk '{if ($2 == "chr17"){print;}}' {input} > ${prefix}_chr17.txt
-        elif [wildcards.chr == 18]; then
+        elif [ wildcards.chr == 18 ]; then
             awk '{if ($2 == "chr18"){print;}}' {input} > ${prefix}_chr18.txt
-        elif [wildcards.chr == 19]; then
+        elif [ wildcards.chr == 19 ]; then
             awk '{if ($2 == "chr19"){print;}}' {input} > ${prefix}_chr19.txt
-        elif [wildcards.chr == 20]; then
+        elif [ wildcards.chr == 20 ]; then
             awk '{if ($2 == "chr20"){print;}}' {input} > ${prefix}_chr20.txt
-         elif [wildcards.chr == 21]; then
+        elif [ wildcards.chr == 21 ]; then
             awk '{if ($2 == "chr21"){print;}}' {input} > ${prefix}_chr21.txt
-         elif [wildcards.chr == 22]; then
+        elif [ wildcards.chr == 22 ]; then
             awk '{if ($2 == "chr22"){print;}}' {input} > ${prefix}_chr22.txt
         fi
 
@@ -251,7 +251,7 @@ rule nominal_Filter:
     shell:
         """
         module load python/{params.version}
-        python3 scripts/correct_nomQTLs.py {input.nomData} {input.nomThreshold} {params.prefix} {wildcard.chr} 1> {log.out} 2> {log.err}
+        python3 scripts/eQTL/correct_nomQTLs.py {input.nomData} {input.nomThreshold} {params.prefix} {wildcard.chr} 1> {log.out} 2> {log.err}
         """
 
 # Add multiple testing correction to permutation pass lead variants/eGenes 
@@ -268,7 +268,7 @@ rule PEER_multipleTesting_perm:
     shell:
         """
         module load r/{params.version}
-        Rscript scripts/correctQTLs.R {input.qtlResult} {output} 1> {log.out} 2> {log.err}
+        Rscript scripts/eQTL/correctQTLs.R {input.qtlResult} {output} 1> {log.out} 2> {log.err}
         """
 
 # Get significant eGenes
@@ -286,7 +286,7 @@ rule sep_eGenes:
     shell:
         """
         module load r/{params.version}
-        Rscript scripts/separate_eGenes.R {input} {params.threshold} {output} 1> {log.out} 2> {log.err}
+        Rscript scripts/eQTL/separate_eGenes.R {input} {params.threshold} {output} 1> {log.out} 2> {log.err}
         """ 
 
 # Populate config file for response QTL workflow

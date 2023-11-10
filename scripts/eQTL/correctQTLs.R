@@ -2,7 +2,7 @@
 library(tidyverse)
 library(qvalue)
 library(org.Hs.eg.db)
-source("scripts/utils.R")
+source("scripts/eQTL/utils.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 qtlData <- readQTLtools_perm(args[1])
