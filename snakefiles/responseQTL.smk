@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
+import os
+import pandas as pd
 
 ## Load config file
 configfile: "config/config_reQTL_final.yaml"
 vcf = config['vcf']
-vcf_file = os.path.basename(vcf)
-vcf_prefix = vcf_file[:re.search("_ALL_qc.vcf.gz", vcf_file).span()[0]]
+ldref = config['ldref']
+ldref_file = os.path.basename(ldref)
+ldref_prefix = ldref_file[:re.search("_ALL_qc.vcf.gz", ldref_file).span()[0]]
 rna = config['rna']
-Nk = config['PEERfactors']
+CTL_Nk = str(config['CTL_PEERfactors']).strip()
+FNF_Nk = str(config['FNF_PEERfactors']).strip()
 
 batches = ['RNAKitBatch', 'RNASequencingBatch', 'genoBatch', 'DNAKitBatch']
-peerCov = 'output/covar/ALL_PEERk{Nk}_genoPC'
+peerCov = 'output/covar/ALL_PEER_k{Nk}_genoPC'
 fileExt = ''
 
 for b in batches:
@@ -20,27 +24,55 @@ for b in batches:
 
 peerCov += ".csv"
 
+CTL_snps = pd.read_csv(config['eQTL_dir'] + 'CTL_PEER_k' + str(CTL_Nk) + '_genoPC' + fileExt + '_perm1Mb_sig.csv', usecols = ['variantID'])['variantID'].values.tolist()
+FNF_snps = pd.read_csv(config['eQTL_dir'] + 'FNF_PEER_k' + str(FNF_Nk) + '_genoPC' + fileExt + '_perm1Mb_sig.csv', usecols = ['variantID'])['variantID'].values.tolist()
+
 rule all:
     input:
-        'output/qtl/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD_rsID.csv'
-        'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.rds',
-        'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv'
-
+        expand('output/qtl/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD_rsID.csv', condition = "CTL", Nk = CTL_Nk),
+        expand('output/qtl/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD_rsID.csv', condition = "FNF", Nk = FNF_Nk),
+        expand('output/ld/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_{snp}_ld.csv', condition = "CTL", Nk = CTL_Nk, snp = CTL_snps),
+        expand('output/ld/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_{snp}_ld.csv', condition = "FNF", Nk = FNF_Nk, snp = FNF_snps),
+        expand('output/qtl/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD.csv', condition = "CTL", Nk = CTL_Nk),
+        expand('output/qtl/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD.csv', condition = "FNF", Nk = FNF_Nk),
+        'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(FNF_Nk) + '_genoPC' + fileExt + '.rds',
+        'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(FNF_Nk) + '_genoPC' + fileExt + '.csv',
+        'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(FNF_Nk) + '_genoPC' + fileExt + '_LD_rsID.csv'
 
 # Get rsIDs for significant lead variants
 rule sig_rsIDs:
     input:
-        config['eQTL_dir'] + 'FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_sig.csv'
+        lambda wildcards: expand(config['eQTL_dir'] + '{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig.csv', condition = wildcards.condition, Nk = eval(str(wildcards.condition) + '_Nk'))
     output:
-        'output/qtl/FNF_PEER_k' + str(Nk) + 'genoPC' + fileExt + '_perm1Mb_sig_rsID.csv'
+        'output/qtl/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID.csv'
     params:
         version = config['pythonVersion'],
         dbSNP_dir = config['dbSNP_dir'],
         dbSNP_prefix = config['dbSNP_prefix'],
         dbSNP_suffix = config['dbSNP_suffix']
     log:
-        out = 'output/logs/FNF_PEER_k' + str(Nk) + 'genoPC' + fileExt + 'sig_rsIDs.out',
-        err = 'output/logs/FNF_PEER_k' + str(Nk) + 'genoPC' + fileExt + 'sig_rsIDs.err'
+        out = 'output/logs/{condition}_PEER_k{Nk}_genoPC' + fileExt + 'sig_rsIDs.out',
+        err = 'output/logs/{condition}_PEER_k{Nk}_genoPC' + fileExt + 'sig_rsIDs.err'
+    shell:
+        """
+        module load python/{params.version}
+        python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {params.dbSNP_suffix} 'lead' {output} 1> {log.out} 2> {log.err}
+        """
+
+# Get rsIDs for nominal results
+rule sig_rsIDs_nom:
+    input:
+        lambda wildcards: expand(config['eQTL_dir'] + '{condition}_PEER_k{Nk}_genoPC' + fileExt + '_nom1Mb_chr{chr}.csv', condition = wildcards.condition, Nk = eval(str(wildcards.condition) + '_Nk'), chr = wildcards.chr)
+    output:
+        'output/qtl/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_nom1Mb_chr{chr}_rsID.csv'
+    params:
+        version = config['pythonVersion'],
+        dbSNP_dir = config['dbSNP_dir'],
+        dbSNP_prefix = config['dbSNP_prefix'],
+        dbSNP_suffix = config['dbSNP_suffix']
+    log:
+        out = 'output/logs/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_nom1Mb_chr{chr}_rsIDs.out',
+        err = 'output/logs/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_nom1Mb_chr{chr}_rsIDs.err'
     shell:
         """
         module load python/{params.version}
@@ -50,60 +82,57 @@ rule sig_rsIDs:
 # Make LD reference file based on input vcf
 rule makeLDref:
     input:
-        vcf
+        ldref
     output:
-        bed = 'output/vcf/' + vcf_prefix + '.bed',
-        bim = 'output/vcf/' + vcf_prefix + '.bim',
-        fam = 'output/vcf/' + vcf_prefix + '.fam'
+        bed = 'output/vcf/' + ldref_prefix + '.bed',
+        bim = 'output/vcf/' + ldref_prefix + '.bim',
+        fam = 'output/vcf/' + ldref_prefix + '.fam'
     log:
         out = 'output/vcf/logs/makeLDref.out',
         err = 'output/vcf/logs/makeLDref.err'
     params:
-        prefix = vcf_prefix
+        prefix = ldref_prefix
     shell:
         """
         module load plink
-        plink --gzvcf {input} --make-bed --out {params.prefix} 1> {log.out} 2> {log.err}
+        plink --vcf {input} --double-id --make-bed --out output/vcf/{params.prefix} 1> {log.out} 2> {log.err}
         """
 
-# Get LD buddies for significant lead variants
+#Get LD buddies for significant lead variants
 rule get_sigLDbuddies:
     input:
-        leads = rules.sig_rsIDs.output,
+        leads = lambda wildcards: expand(config['eQTL_dir'] + '{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID.csv', condition = wildcards.condition, Nk = eval(str(wildcards.condition) + '_Nk')),
         ldref_bed = rules.makeLDref.output.bed,
         ldref_bim = rules.makeLDref.output.bim,
         ldref_fam = rules.makeLDref.output.fam
     output:
-        'output/ld/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + 'sig_rsID_{snp}_ld.ld'
+        'output/ld/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_{snp}_ld.ld'
     params:
-        filePrefix = filePrefix
+        filePrefix = '{condition}_PEER_k{Nk}_genoPC' + fileExt
     log:
-        out = 'output/logs/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_get_sigLDbuddies_{snp}.out',
-        err = 'output/logs/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_get_sigLDbuddies_{snp}.err'
+        'output/ld/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_get_sigLDbuddies_{snp}_ld.log'
     shell:
         """
         module load plink
         # Get file prefix of ldref for plink
-        ldref_prefix=${{{input.ldref_bed}%%.*}}
+        ld_path={input.ldref_bed}
+        ldref_prefix=${{ld_path%%.*}}
 
-        # Iterate through snps by variantID to match with vcf file
-        for snp in `awk -F ',' '{{print $8}}' {input.leads} | awk 'NR!=1 {{print}}'`
-        do
-            plink --bfile ${{ldref_prefix}} --ld-snp ${{snp}} --ld-window 200000 --ld-window-kb 1000 --ld-window-r2 0 --r2 --out output/ld/{params.filePrefix}_perm1Mb_sig_rsID_${{snp}}_ld 1> {log.out} 2> {log.err}
-        done
+        plink --bfile ${{ldref_prefix}} --ld-snp {wildcards.snp} --ld-window 200000 --ld-window-kb 1000 --ld-window-r2 0 --r2 --out output/ld/{params.filePrefix}_perm1Mb_sig_rsID_{wildcards.snp}_ld
+
         """
 
 rule reformat_sigLDbuddies:
     input:
         buddies = rules.get_sigLDbuddies.output,
-        leads = rules.sig_rsIDs.output
+        leads = lambda wildcards: expand(config['eQTL_dir'] + '{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID.csv', condition = wildcards.condition, Nk = eval(str(wildcards.condition) + '_Nk'))
     output:
-        'output/ld/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_sig_rsID_{snp}_ld.csv'
+        'output/ld/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_{snp}_ld.csv'
     params:
         version = config['Rversion']
     log:
-        out = 'output/logs/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_reformat_sigLDbuddies_{snp}.out',
-        err = 'output/logs/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_reformat_sigLDbuddies_{snp}.err'
+        out = 'output/logs/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_reformat_sigLDbuddies_{snp}.out',
+        err = 'output/logs/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_reformat_sigLDbuddies_{snp}.err'
     shell:
         """
         module load r/{params.version}
@@ -112,12 +141,12 @@ rule reformat_sigLDbuddies:
 
 rule join_sigLDbuddies:
     input:
-        lambda wildcards: [expand('output/ld/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_sig_rsID_{snp}_ld.csv', snp = s) for s in pd.read_csv(rules.sig_rsIDs.output, usecols = ['variantID'])['variantID'].values]
+        lambda wildcards: expand('output/ld/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_{snp}_ld.csv', condition = wildcards.condition, Nk = wildcards.Nk, snp = eval(str(wildcards.condition) + '_snps'))
     output:
-        'output/qtl/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD.csv'
+        'output/qtl/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD.csv'
     log:
-        out = 'output/logs/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_joinLD.out',
-        err = 'output/logs/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_joinLD.err'
+        out = 'output/logs/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_joinLD.out',
+        err = 'output/logs/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_joinLD.err'
     run:
         
         all_leads = []
@@ -126,21 +155,21 @@ rule join_sigLDbuddies:
             all_leads.append(data)
 
         final_data = pd.concat(all_leads)
-        final_data.to_csv(output)
+        final_data.to_csv(output[0], index = False)
 
 rule get_LDbuddy_rsIDs:
     input:
         rules.join_sigLDbuddies.output
     output:
-        'output/qtl/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD_rsID.csv'
+        'output/qtl/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD_rsID.csv'
     params:
         version = config['pythonVersion'],
         dbSNP_dir = config['dbSNP_dir'],
         dbSNP_prefix = config['dbSNP_prefix'],
         dbSNP_suffix = config['dbSNP_suffix']
     log:
-        out = 'output/logs/FNF_PEER_k'+ str(Nk) + '_genoPC' + fileExt + '_get_LDbuddy_rsIDs.out',
-        err = 'output/logs/FNF_PEER_k'+ str(Nk) + '_genoPC' + fileExt + '_get_LDbuddy_rsIDs.err'
+        out = 'output/logs/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_get_LDbuddy_rsIDs.out',
+        err = 'output/logs/{condition}_PEER_k{Nk}_genoPC' + fileExt + '_get_LDbuddy_rsIDs.err'
     shell:
         """
         module load python/{params.version}
@@ -149,7 +178,7 @@ rule get_LDbuddy_rsIDs:
 
 rule make_leadList:
     input:
-        rules.sig_rsIDs.output
+       lambda wildcards: expand(config['eQTL_dir'] + '{condition}_PEER_k{Nk}_genoPC' + fileExt + '_perm1Mb_sig_rsID.csv', condition = 'FNF',Nk = eval('FNF_Nk'))
     output:
         temp('output/reQTL/FNF_variants.list')
     log:
@@ -157,17 +186,17 @@ rule make_leadList:
         err = 'output/logs/make_leadList.err'
     shell:
         """
-        cut -d "," -f7 {input} > output/reQTL/FNF_variants.list
+        cut -d "," -f2 {input} > output/reQTL/FNF_variants.list
         sed -i '1d' output/reQTL/FNF_variants.list
         """
 
-# Filter the VCF file for significant lead variants
+# Filter the VCF file for significant lead variants (based on variantID for matching)
 rule subsetVCF_leadvar:
     input:
         leadvar_FNF = 'output/reQTL/FNF_variants.list',
         vcf = vcf
     output:
-        'output/reQTL/FNF_PEER_k' + str(Nk) + '_genoPC' + fileExt + '_leadVars.vcf.gz'
+        'output/reQTL/FNF_PEER_k' + str(FNF_Nk) + '_genoPC' + fileExt + '_leadVars.vcf.gz'
     params:
         version = config['gatkVersion']
     log:
@@ -186,10 +215,10 @@ rule getPEER_ALL:
     input:
         rna
     output:
-        factors = [expand('output/covar/ALL_PEERfactors_k{Nk}.txt', Nk = Nk)],
-        var = [expand('output/covar/ALL_PEERfactors_k{Nk}_variance.txt', Nk = Nk)]
+        factors = [expand('output/covar/ALL_PEERfactors_k{Nk}.txt', Nk = FNF_Nk)],
+        var = [expand('output/covar/ALL_PEERfactors_k{Nk}_variance.txt', Nk = FNF_Nk)]
     params:
-        Nk = config['PEERfactors']
+        Nk = config['FNF_PEERfactors']
     log:
         out = 'output/logs/ALL_getPEER.out',
         err = 'output/logs/ALL_getPEER.err'
@@ -204,7 +233,7 @@ rule makePEERcovar_geno_ALL:
     input:
         peer = rules.getPEER_ALL.output.factors
     output:
-        [expand(peerCov, Nk = Nk)]
+        [expand(peerCov, Nk = FNF_Nk)]
     params:
         version = config['Rversion'],
         genoPC = config['genoPC'],
@@ -216,7 +245,7 @@ rule makePEERcovar_geno_ALL:
         RNASequencingBatch = config['RNASequencingBatch'],
         genoBatch = config['genoBatch'],
         DNAKitBatch = config['DNAKitBatch'],
-        Nk = Nk
+        Nk = FNF_Nk
     log:
         out = 'output/logs/makePEERcovar_geno_ALL.out',
         err = 'output/logs/makePEERcovar_geno_ALL.err'
@@ -232,10 +261,10 @@ rule get_reQTLs:
         normExpression = rna,
         covariates = rules.makePEERcovar_geno_ALL.output,
         vcf = rules.subsetVCF_leadvar.output,
-        eGene = rules.get_LDbuddy_rsIDs.output
+        eGene = 'output/qtl/FNF_PEER_k' + str(FNF_Nk) + '_genoPC' + fileExt + '_perm1Mb_sig_rsID.csv'
     output:
-        rds = 'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.rds',
-        csv = 'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(Nk) + '_genoPC' + fileExt + '.csv'
+        rds = 'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(FNF_Nk) + '_genoPC' + fileExt + '.rds',
+        csv = 'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(FNF_Nk) + '_genoPC' + fileExt + '.csv'
     params:
         version = config['Rversion'],
         threshold = config['FDRthreshold']
@@ -247,4 +276,22 @@ rule get_reQTLs:
         module load r/{params.version}
         Rscript scripts/responseQTL/testInteraction.R {input.normExpression} {input.covariates} {input.vcf} {input.eGene} {params.threshold} {output.rds} {output.csv} 1> {log.out} 2> {log.err}
         """
+
+rule join_reQTL_LD:
+    input:
+        reQTLs = rules.get_reQTLs.output.csv,
+        ld = 'output/qtl/FNF_PEER_k' + str(FNF_Nk) + '_genoPC' + fileExt + '_perm1Mb_sig_rsID_LD_rsID.csv'
+    output:
+        'output/reQTL/FNF_sig_reQTLs_PEER_k' + str(FNF_Nk) + '_genoPC' + fileExt + '_LD_rsID.csv'
+    params:
+        version = config['Rversion']
+    log:
+        out = "output/logs/join_reQTL_LD.out",
+        err = "output/logs/join_reQTL_LD.err"
+    shell:
+        """
+        module load r/{params.version}
+        Rscript scripts/responseQTL/join_reQTL_LD.R {input.reQTLs} {input.ld} {output} 1> {log.out} 2> {log.err}
+        """
+        
 

@@ -10,8 +10,8 @@ test_pair <- function(gene_variant,
                       geno_matrix, 
                       qtl_formula,
                       interaction_formula){
-  gene_id <- gene_variant[1]
-  variant_id <- gene_variant[7]
+  gene_id <- gene_variant[3]
+  variant_id <- gene_variant[2]
   return(testInteractionLme4(gene_id = gene_id,
                       variant_id = variant_id,
                       expression_matrix = expression_matrix,
@@ -31,10 +31,10 @@ expression <- read_delim(args[1])
 
 # Construct dataframe for gene meta data
 gene_metadata <- expression %>%
-  dplyr::select(gene_id, gene_name, `#chr`, start, end, strand)
+  dplyr::select(gene_id, `#chr`, start, end, length, strand)
   
 expression <- expression %>%
-  dplyr::select(-gene_name, -`#chr`, -start, -end, -strand)
+  dplyr::select(-`#chr`, -start, -end, -length, -strand)
 
 # Construct dataframe for sample meta data
 sample_metadata <- 

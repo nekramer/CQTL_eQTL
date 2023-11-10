@@ -34,7 +34,11 @@ verifybamid:
 multiqc:
   memPerCpu: 8G
 
-FNFsig_rsIDs:
+sig_rsIDs:
   memPerCpu: 32G
-CTLsig_rsIDs:
+get_LDbuddy_rsIDs:
+  memPerCpu: 32G
+join_sigLDbuddies:
+  memPerCpu: 16G
+get_reQTLs:
   memPerCpu: 32G

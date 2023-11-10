@@ -6,9 +6,11 @@ dnaSamplesheet: 'dnaSamplesheet.csv' # DNA
 dbSNP_dir: '/work/users/n/e/nekramer/References/GRCh38.p13/dbSNP/'
 dbSNP_prefix: 'dbSNP155.GRCh38.p13'
 dbSNP_suffix: 'noindels'
+ldref: /proj/phanstiel_lab/Data/processed/CQTL/geno/CQTL_COA_01_GDA8_COA2_01_COA3_01_GDA8_COA4_COA5_COA6_COA7/vcf/CQTL_COA_01_GDA8_COA2_01_COA3_01_GDA8_COA4_COA5_COA6_COA7_ALL_qc.vcf.gz
 
-# Which number of PEER factors to use
-PEERfactors: 10
+# Which number of PEER factors to use for each condition
+CTL_PEERfactors: 20
+FNF_PEERfactors: 22
 
 ## Multiple testing correction threshold
 FDRthreshold: 0.05
