@@ -23,6 +23,10 @@ case $1 in
         'responseQTL' | 'run_responseQTL')
                 snakemake -j 1 --unlock -s snakefiles/responseQTL.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py   
             ;;
+
+        'colocalization' | 'run_colocalization')
+            snakemake -j 1 --unlock -s snakefiles/colocalization.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py
+            ;;
 esac
 
 ## Deactivate virtual environment

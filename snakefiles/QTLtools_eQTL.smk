@@ -38,7 +38,7 @@ vcf_prefix = vcf_file[:re.search("_ALL_qc.vcf.gz", vcf_file).span()[0]]
 ## Number of PEER factors
 Nk = config['PEERfactors']
 
-rule_all_inputs = [#'output/qc/multiqc_report.html',
+rule_all_inputs = ['output/qc/multiqc_report.html',
                     'config/config_reQTL_final.yaml',
                     [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz', condition = ['ALL', 'CTL', 'FNF'])],
                     [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz.tbi', condition = ['ALL', 'CTL', 'FNF'])],

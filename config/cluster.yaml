@@ -42,3 +42,11 @@ join_sigLDbuddies:
   memPerCpu: 16G
 get_reQTLs:
   memPerCpu: 32G
+
+
+coloc_PBS:
+  memPerCpu: 32G
+coloc_FNF_noresponse:
+  memPerCpu: 32G
+coloc_FNFresponse:
+  memPerCpu: 32G

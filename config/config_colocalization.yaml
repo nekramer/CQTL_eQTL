@@ -1,0 +1,33 @@
+
+## Samplesheets
+samplesheet: 'samplesheet.csv' # RNA
+donorSamplesheet: 'donorSamplesheet.csv' # donor information
+dnaSamplesheet: 'dnaSamplesheet.csv' # DNA
+
+## Path to vcf inputted to QTL mapping
+vcf: 'output/vcf/CQTL_COA_01_GDA8_COA2_01_COA3_01_GDA8_COA4_COA5_COA6_COA7_qtl.recode.vcf.gz'
+
+## Path to processed GWAS
+gwas_path: '/work/users/n/e/nekramer/External/gwas/Boer_reprocessed/'
+
+## Prefix to nominal qtl results
+pbs_nominal_qtls: 'output/qtl/CTL_PEER_k20_genoPC_nom1Mb'
+fnf_nominal_qtls: 'output/qtl/FNF_PEER_k22_genoPC_nom1Mb'
+
+## Lead PBS and FN-f QTLs
+pbs_lead: 'output/qtl/CTL_PEER_k20_genoPC_perm1Mb_sig_rsID.csv'
+fnf_lead: 'output/qtl/FNF_PEER_k22_genoPC_perm1Mb_sig_rsID.csv'
+
+## Lead PBS and FN-f QTLs with LD
+pbs_ld: 'output/qtl/CTL_PEER_k20_genoPC_perm1Mb_sig_rsID_LD_rsID.csv'
+fnf_ld: 'output/qtl/FNF_PEER_k22_genoPC_perm1Mb_sig_rsID_LD_rsID.csv'
+
+## Response QTLs
+response_qtls: 'output/reQTL/FNF_sig_reQTLs_PEER_k22_genoPC.csv'
+
+# Donor sample size
+eqtlN: 101
+
+## Software versions
+Rversion: "4.2.2"
+pythonVersion: "3.9.6"
