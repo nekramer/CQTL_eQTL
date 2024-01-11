@@ -1,0 +1,9 @@
+# RNA samplesheet
+samplesheet: 'samplesheet.csv'
+
+## Software versions
+deeptoolsVersion: "3.5.1"
+samtoolsVersion: "1.18"
+
+## List columns to group (i.e. any columns left out will become part of the same group) 
+mergeBy: ['Proj', 'Condition']

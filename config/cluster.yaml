@@ -50,3 +50,11 @@ coloc_FNF_noresponse:
   memPerCpu: 32G
 coloc_FNFresponse:
   memPerCpu: 32G
+
+
+signal:
+  memPerCpu: 64G
+mergeAlign:
+  memPerCpu: 64G
+mergeSignal:
+  memPerCpu: 64G
