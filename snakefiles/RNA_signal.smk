@@ -28,11 +28,19 @@ samples['mn'] = samples[config['mergeBy']].agg('_'.join, axis=1)
 ## Build dictionary of merged BAM files
 mergeSamples = samples.groupby('mn')['id'].apply(list).to_dict()
 
+# Unique sample names in dictionary
+mergeSamples_dedup = dict()
+for key in mergeSamples:
+	unique_values = list(set(mergeSamples[key]))
+	mergeSamples_dedup[key] = unique_values
+
+
+
 rule all:
     input:
         [expand("output/{group}/signal/{group}.bw", group = key) for key in read1],
-        [expand("output/mergeAlign/{mergeName}_{ext}", mergeName=key, ext=['sorted.bam', 'sorted.bam.bai', 'stats.txt']) for key in mergeSamples],
-        [expand("output/mergeSignal/{mergeName}.bw", mergeName=key) for key in mergeSamples]
+        [expand("output/mergeAlign/{mergeName}_{ext}", mergeName=key, ext=['sorted.bam', 'sorted.bam.bai', 'stats.txt']) for key in mergeSamples_dedup],
+        [expand("output/mergeSignal/{mergeName}.bw", mergeName=key) for key in mergeSamples_dedup]
 
 
 rule signal:
@@ -53,8 +61,8 @@ rule signal:
 
 rule mergeAlign:
 	input:
-		bams = lambda wildcards: ["output/{group}/align/{group}.Aligned.sortedByCoord.out.bam".format(group=value) for value in mergeSamples[wildcards.mergeName]],
-		bais = lambda wildcards: ["output/{group}/align/{group}.aligned.sortedByCoord.out.bam.bai".format(group=value) for value in mergeSamples[wildcards.mergeName]]
+		bams = lambda wildcards: ["output/{group}/align/{group}.Aligned.sortedByCoord.out.bam".format(group=value) for value in mergeSamples_dedup[wildcards.mergeName]],
+		bais = lambda wildcards: ["output/{group}/align/{group}.aligned.sortedByCoord.out.bam.bai".format(group=value) for value in mergeSamples_dedup[wildcards.mergeName]]
 	output:
 		bam = "output/mergeAlign/{mergeName}_sorted.bam",
 		bai = "output/mergeAlign/{mergeName}_sorted.bam.bai",
