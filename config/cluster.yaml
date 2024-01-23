@@ -58,3 +58,4 @@ mergeAlign:
   memPerCpu: 64G
 mergeSignal:
   memPerCpu: 64G
+  time: 10-00:00:00

@@ -7,3 +7,6 @@ samtoolsVersion: "1.18"
 
 ## List columns to group (i.e. any columns left out will become part of the same group) 
 mergeBy: ['Proj', 'Condition']
+
+starVersion: "2.7.10a"
+genomeDir: '/proj/phanstiel_lab/References/genomes/GENCODE.GRCh38.p13/STAR_idx'

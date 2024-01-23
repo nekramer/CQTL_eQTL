@@ -222,7 +222,7 @@ rule verifybamid:
         err = 'output/logs/verifybamid_{group}.err'
     shell:
         """
-        {params.verifybamid} --vcf {input.vcf} --bam {input.bam} --best --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
+        {params.verifybamid} --vcf {input.vcf} --bam {input.bam} --bai {input.bai} --best --out output/qc/{wildcards.group}_verifybamid 2> {log.err}
         """
 
 rule quant:
