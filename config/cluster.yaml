@@ -59,3 +59,6 @@ mergeAlign:
 mergeSignal:
   memPerCpu: 64G
   time: 10-00:00:00
+
+join_LDbuddies:
+  memPerCpu: 64G

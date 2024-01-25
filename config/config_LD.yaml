@@ -1,0 +1,24 @@
+
+
+# This samplesheet will contain all file paths that contain eQTL result files with the variants to obtain LD information for.
+# Columns are: 1) file 2) variant_col where variant_col is the column number in the file that contains the variant ID that will match the variant ID in the LD reference file;
+# and 3) chrom_col where chrom_col is the column number in the file that contains the chromosome number.
+# variant_col and chrom_col are 0-indexed. 
+samplesheet: eQTL_LD_samplesheet.csv 
+
+# This is a file path to the prefix of the LD reference file(s). These files should be in PLINK binary format and split by chromosome, 
+# with the chromosome number on the end of the file. 
+# The file prefix should omit the chromosome number and the file extension. For example, if the LD reference files are named EUR_1000G.GRCh38.20181129_chr1.bed, 
+# EUR_1000G.GRCh38.20181129_chr1.bim, and EUR_1000G.GRCh38.20181129_chr1.fam, then the ldref_prefix should be EUR_1000G.GRCh38.20181129_chr
+ldref_prefix: /proj/phanstiel_lab/References/genomes/1000G/GRCh38/EUR/all_snps/EUR_1000G.GRCh38.20181129_chr
+# A logical indicating whether variant IDs in the LD reference file(s) have a 'chr' prefix. For example, are variants ID's as 10:11501:C:A or chr10:11501:C:A.
+# This is necessary to match variant ID formats between the LD reference file(s) and the eQTL result files.
+ld_chr_prefix: 'FALSE'
+
+
+# Output file suffix
+out_suffix: EUR1000G
+
+
+## Software versions
+Rversion: 4.3.1
