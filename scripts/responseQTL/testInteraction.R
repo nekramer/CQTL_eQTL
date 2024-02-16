@@ -109,5 +109,4 @@ reQTL_df <- tibble("ID" = names(sig_pvals),
 
 
 # Save to output
-saveRDS(sig_interactionResults, file = args[6])
-write_csv(reQTL_df, file = args[7])
+write_csv(reQTL_df, file = args[6])

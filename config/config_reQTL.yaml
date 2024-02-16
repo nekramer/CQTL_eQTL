@@ -1,39 +1,18 @@
-## Samplesheets
-samplesheet: 'samplesheet.csv' # RNA
-donorSamplesheet: 'donorSamplesheet.csv' # donor information
-dnaSamplesheet: 'dnaSamplesheet.csv' # DNA
-
-dbSNP_dir: '/work/users/n/e/nekramer/References/GRCh38.p13/dbSNP/'
-dbSNP_prefix: 'dbSNP155.GRCh38.p13'
-dbSNP_suffix: 'noindels'
-ldref: /proj/phanstiel_lab/Data/processed/CQTL/geno/CQTL_COA_01_GDA8_COA2_01_COA3_01_GDA8_COA4_COA5_COA6_COA7/vcf/CQTL_COA_01_GDA8_COA2_01_COA3_01_GDA8_COA4_COA5_COA6_COA7_ALL_qc.vcf.gz
-
-# Which number of PEER factors to use for each condition
+DNAKitBatch: 'FALSE'
+FDRthreshold: 0.01
 CTL_PEERfactors: 20
 FNF_PEERfactors: 22
-
-## Multiple testing correction threshold
-FDRthreshold: 0.05
-
-## Software versions
-Rversion: "4.2.2"
-gatkVersion: "4.2.5.0"
-pythonVersion: "3.9.6"
-
-
-
-## To be updated by eQTL pipeline
-# Path to permutation pass eQTLs, with multiple testing correction p-value columns
-eQTL_dir:
-# Path to vcf inputted to QTL mapping
-vcf:
-# Path to normalized RNA counts
-rna:
-# Path to genotyping PC's
-genoPC: 
-genoPCkneedle:
-# Covariate parameters (import same from config_QTLtools_eQTL.yaml)
-RNAKitBatch:
-RNASequencingBatch:
-genoBatch:
-DNAKitBatch:
+RNAKitBatch: 'FALSE'
+RNASequencingBatch: 'FALSE'
+Rversion: 4.3.1
+dnaSamplesheet: dnaSamplesheet.csv
+donorSamplesheet: donorSamplesheet.csv
+eQTL_dir: output/qtl/
+gatkVersion: 4.2.5.0
+genoBatch: 'FALSE'
+genoPC: output/covar/genotypes.pca
+genoPCkneedle: 4
+pythonVersion: 3.9.6
+rna: output/normquant/ALL_CPMadjTMM_invNorm.bed.gz
+samplesheet: samplesheet.csv
+vcf: output/vcf/CQTL_COA_01_GDA8_COA2_01_COA3_01_GDA8_COA4_COA5_COA6_COA7_qtl.recode.vcf.gz
