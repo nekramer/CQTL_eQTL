@@ -1,6 +1,6 @@
 #!/usr/bin/R
 library(tidyverse)
-source("scripts/eQTL/utils.R")
+source("scripts/utils.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 

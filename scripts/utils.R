@@ -47,13 +47,25 @@ readQTLtools_perm <- function(filePath){
   return(qtlData)
 }
 
+#' A function to appropriately read in and name the columns of output
+#' from QTLtools cis nominal pass
 readQTLtools_nom <- function(filePath){
   qtlData <- read_delim(filePath, col_names = FALSE)
   colnames(qtlData) <- c("gene_id", "gene_chr", "gene_start", "gene_end",
                          "gene_strand", "num_cis_variants", "dist",
                          "variantID", "variant_chr", "variant_start",
-                         "variant_end", "nom_pval", "r_squared", "beta",
+                         "variant_end", "nom_pval", "r_squared", "beta", "beta_se",
                          "best_hit")
+  if (nrow(qtlData) == 0){
+    qtlData <- tibble(gene_id = character(), gene_chr = character(),
+                      gene_start = numeric(), gene_end = numeric(),
+                      gene_strand = character(), num_cis_variants = numeric(),
+                      dist = numeric(), variantID = character(), 
+                      variant_chr = character(), variant_start = numeric(),
+                      variant_end = numeric(), nom_pval = numeric(), 
+                      r_squared = numeric(), beta = numeric(), beta_se = numeric(), 
+                      best_hit = numeric())
+  }
   return(qtlData)
 }
 

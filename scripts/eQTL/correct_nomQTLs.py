@@ -10,7 +10,7 @@ print(outfile)
 nom_thresholds = pd.read_csv(sys.argv[2])
 print("Read in nominal thresholds")
 with open(outfile, "a+") as output:
-  output.write('gene_id,gene_chr,gene_start,gene_end,gene_strand,num_cis_variants,dist,variantID,variant_chr,variant_start,variant_end,nom_pval,r_squared,beta,best_hit,pval_nominal_threshold,nom_sig\n')
+  output.write('gene_id,gene_chr,gene_start,gene_end,gene_strand,num_cis_variants,dist,variantID,variant_chr,variant_start,variant_end,nom_pval,r_squared,beta,beta_se,best_hit,pval_nominal_threshold,nom_sig\n')
   with open(sys.argv[1], "r") as f:
     for line in f:
       qtldata = line.rstrip().split(" ")

@@ -64,7 +64,7 @@ peerCov = 'output/covar/' + filePrefix + '.txt'
 peerQTL_perm = 'output/qtl/' + filePrefix + '_perm1Mb.txt'
 peerQTL_nominal = 'output/qtl/' + filePrefix + '_nom1Mb.txt'
 nomThreshold = 'output/qtl/' + filePrefix + '_nom1Mb_thresholds.csv'
-nomSplit = 'output/qtl/' + filePrefix + 'nom1Mb_chr{chr}.txt'
+nomSplit = 'output/qtl/' + filePrefix + '_nom1Mb_chr{chr}.txt'
 nomFilter_prefix = 'output/qtl/' + filePrefix + '_nom1Mb'
 nomFilter = 'output/qtl/' + filePrefix + '_nom1Mb_chr{chr}.csv'
 peerMultipleTestingFinal = 'output/qtl/' + filePrefix + '_perm1Mb_FDR.csv'
@@ -154,7 +154,7 @@ rule PEER_nominal_eQTL:
     shell:
         """
         module load qtltools/{params.version}
-        QTLtools cis --vcf {input.vcf} --bed {input.bed} --cov {input.cov} --nominal 1 --window 1000000 --out {output} 1> {log.out} 2> {log.err}
+        QTLtools cis --vcf {input.vcf} --bed {input.bed} --cov {input.cov} --nominal 1 --window 1000000 --std-err --out {output} 1> {log.out} 2> {log.err}
         """ 
 
 # Determining other significant variants using threshold determined by lead variants in permutation pass
@@ -186,50 +186,50 @@ rule splitNom:
     shell:
         """
         prefix=`basename {input} .txt`
-        if [ wildcards.chr == 1 ]; then
-            awk '{if ($2 == "chr1"){print;}}' {input} > ${prefix}_chr1.txt
-        elif [ wildcards.chr == 2 ]; then
-            awk '{if ($2 == "chr2"){print;}}' {input} > ${prefix}_chr2.txt
-        elif [ wildcards.chr == 3 ]; then
-            awk '{if ($2 == "chr3"){print;}}' {input} > ${prefix}_chr3.txt
-        elif [ wildcards.chr == 4 ]; then
-            awk '{if ($2 == "chr4"){print;}}' {input} > ${prefix}_chr4.txt
-        elif [ wildcards.chr == 5 ]; then
-            awk '{if ($2 == "chr5"){print;}}' {input} > ${prefix}_chr5.txt
-        elif [ wildcards.chr == 6 ]; then
-            awk '{if ($2 == "chr6"){print;}}' {input} > ${prefix}_chr6.txt
-        elif [ wildcards.chr == 7 ]; then
-            awk '{if ($2 == "chr7"){print;}}' {input} > ${prefix}_chr7.txt
-        elif [ wildcards.chr == 8 ]; then
-            awk '{if ($2 == "chr8"){print;}}' {input} > ${prefix}_chr8.txt
-        elif [ wildcards.chr == 9 ]; then
-            awk '{if ($2 == "chr9"){print;}}' {input} > ${prefix}_chr9.txt
-        elif [ wildcards.chr == 10 ]; then
-            awk '{if ($2 == "chr10"){print;}}' {input} > ${prefix}_chr10.txt
-        elif [ wildcards.chr == 11 ]; then
-            awk '{if ($2 == "chr11"){print;}}' {input} > ${prefix}_chr11.txt
-        elif [ wildcards.chr == 12 ]; then
-            awk '{if ($2 == "chr12"){print;}}' {input} > ${prefix}_chr12.txt
-        elif [ wildcards.chr == 13 ]; then
-            awk '{if ($2 == "chr13"){print;}}' {input} > ${prefix}_chr13.txt
-        elif [ wildcards.chr == 14 ]; then
-            awk '{if ($2 == "chr14"){print;}}' {input} > ${prefix}_chr14.txt
-        elif [ wildcards.chr == 15 ]; then
-            awk '{if ($2 == "chr15"){print;}}' {input} > ${prefix}_chr15.txt
-        elif [ wildcards.chr == 16 ]; then
-            awk '{if ($2 == "chr16"){print;}}' {input} > ${prefix}_chr16.txt
-        elif [ wildcards.chr == 17 ]; then
-            awk '{if ($2 == "chr17"){print;}}' {input} > ${prefix}_chr17.txt
-        elif [ wildcards.chr == 18 ]; then
-            awk '{if ($2 == "chr18"){print;}}' {input} > ${prefix}_chr18.txt
-        elif [ wildcards.chr == 19 ]; then
-            awk '{if ($2 == "chr19"){print;}}' {input} > ${prefix}_chr19.txt
-        elif [ wildcards.chr == 20 ]; then
-            awk '{if ($2 == "chr20"){print;}}' {input} > ${prefix}_chr20.txt
-        elif [ wildcards.chr == 21 ]; then
-            awk '{if ($2 == "chr21"){print;}}' {input} > ${prefix}_chr21.txt
-        elif [ wildcards.chr == 22 ]; then
-            awk '{if ($2 == "chr22"){print;}}' {input} > ${prefix}_chr22.txt
+        if [ {wildcards.chr} == 1 ]; then
+            awk '{{if ($2 == "chr1"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr1.txt
+        elif [ {wildcards.chr} == 2 ]; then
+            awk '{{if ($2 == "chr2"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr2.txt
+        elif [ {wildcards.chr} == 3 ]; then
+            awk '{{if ($2 == "chr3"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr3.txt
+        elif [ {wildcards.chr} == 4 ]; then
+            awk '{{if ($2 == "chr4"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr4.txt
+        elif [ {wildcards.chr} == 5 ]; then
+            awk '{{if ($2 == "chr5"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr5.txt
+        elif [ {wildcards.chr} == 6 ]; then
+            awk '{{if ($2 == "chr6"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr6.txt
+        elif [ {wildcards.chr} == 7 ]; then
+            awk '{{if ($2 == "chr7"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr7.txt
+        elif [ {wildcards.chr} == 8 ]; then
+            awk '{{if ($2 == "chr8"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr8.txt
+        elif [ {wildcards.chr} == 9 ]; then
+            awk '{{if ($2 == "chr9"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr9.txt
+        elif [ {wildcards.chr} == 10 ]; then
+            awk '{{if ($2 == "chr10"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr10.txt
+        elif [ {wildcards.chr} == 11 ]; then
+            awk '{{if ($2 == "chr11"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr11.txt
+        elif [ {wildcards.chr} == 12 ]; then
+            awk '{{if ($2 == "chr12"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr12.txt
+        elif [ {wildcards.chr} == 13 ]; then
+            awk '{{if ($2 == "chr13"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr13.txt
+        elif [ {wildcards.chr} == 14 ]; then
+            awk '{{if ($2 == "chr14"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr14.txt
+        elif [ {wildcards.chr} == 15 ]; then
+            awk '{{if ($2 == "chr15"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr15.txt
+        elif [ {wildcards.chr} == 16 ]; then
+            awk '{{if ($2 == "chr16"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr16.txt
+        elif [ {wildcards.chr} == 17 ]; then
+            awk '{{if ($2 == "chr17"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr17.txt
+        elif [ {wildcards.chr} == 18 ]; then
+            awk '{{if ($2 == "chr18"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr18.txt
+        elif [ {wildcards.chr} == 19 ]; then
+            awk '{{if ($2 == "chr19"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr19.txt
+        elif [ {wildcards.chr} == 20 ]; then
+            awk '{{if ($2 == "chr20"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr20.txt
+        elif [ {wildcards.chr} == 21 ]; then
+            awk '{{if ($2 == "chr21"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr21.txt
+        elif [ {wildcards.chr} == 22 ]; then
+            awk '{{if ($2 == "chr22"){{print;}}}}' {input} > output/qtl/${{prefix}}_chr22.txt
         fi
 
         """
@@ -251,7 +251,7 @@ rule nominal_Filter:
     shell:
         """
         module load python/{params.version}
-        python3 scripts/eQTL/correct_nomQTLs.py {input.nomData} {input.nomThreshold} {params.prefix} {wildcard.chr} 1> {log.out} 2> {log.err}
+        python3 scripts/eQTL/correct_nomQTLs.py {input.nomData} {input.nomThreshold} {params.prefix} {wildcards.chr} 1> {log.out} 2> {log.err}
         """
 
 # Add multiple testing correction to permutation pass lead variants/eGenes 
