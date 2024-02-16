@@ -39,7 +39,6 @@ vcf_prefix = vcf_file[:re.search("_ALL_qc.vcf.gz", vcf_file).span()[0]]
 Nk = config['PEERfactors']
 
 rule_all_inputs = ['output/qc/multiqc_report.html',
-                    'config/config_reQTL_final.yaml',
                     [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz', condition = ['ALL', 'CTL', 'FNF'])],
                     [expand('output/normquant/{condition}_CPMadjTMM_invNorm.bed.gz.tbi', condition = ['ALL', 'CTL', 'FNF'])],
                     [expand('output/covar/{condition}_PEERfactors_k{Nk}.txt', condition = ['CTL', 'FNF'], Nk = Nk)],
@@ -272,7 +271,7 @@ rule PEER_multipleTesting_perm:
         """
 
 # Get significant eGenes
-rule sep_eGenes:
+rule sig_eGenes:
     input:
         rules.PEER_multipleTesting_perm.output   
     output:
@@ -288,41 +287,3 @@ rule sep_eGenes:
         module load r/{params.version}
         Rscript scripts/eQTL/separate_eGenes.R {input} {params.threshold} {output} 1> {log.out} 2> {log.err}
         """ 
-
-# Populate config file for response QTL workflow
-rule update_reQTL:
-    input:
-        vcf = rules.filterVCFvariants.output.vcf,
-        rna = rules.indexQuant_All.output.bed,
-        genoPC = rules.genoPCA.output.pcs,
-        genoPCkneedle = rules.genoPCkneedle.output
-    output:
-        'config/config_reQTL_final.yaml'
-    log:
-        out = 'output/logs/update_reQTL.out',
-        err = 'output/logs/update_reQTL.err'
-    run:
-        # Open original config file to get values for RNAKitBatch, RNASequencingBatch, genoBatch, DNAKitBatch
-        with open('config/config_QTLtools_eQTL.yaml', 'r') as f:
-            config = yaml.safe_load(f)
-
-        # Open genoPCkneedle file to get number of geno PCs
-        with open('output/covar/genoPCkneedle.txt', 'r') as f:
-            genoPCkneedle = int(f.readlines()[0])
-
-
-        with open('config/config_reQTL.yaml', 'r') as f:
-            reqtl_config = yaml.safe_load(f)
-        reqtl_config['eQTL_dir'] = 'output/qtl/'
-        reqtl_config['vcf'] = input.vcf
-        reqtl_config['rna'] = input.rna
-        reqtl_config['genoPC'] = input.genoPC
-        reqtl_config['genoPCkneedle'] = genoPCkneedle
-        reqtl_config['RNAKitBatch'] = config['RNAKitBatch']
-        reqtl_config['RNASequencingBatch'] = config['RNASequencingBatch']
-        reqtl_config['genoBatch'] = config['genoBatch']
-        reqtl_config['DNAKitBatch'] = config['DNAKitBatch']
-
-        # Write to new updated config info
-        with open('config/config_reQTL_final.yaml', 'w') as f:
-            yaml.dump(reqtl_config, f)
