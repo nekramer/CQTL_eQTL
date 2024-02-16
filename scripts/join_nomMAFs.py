@@ -15,4 +15,5 @@ maf_chr = pd.read_csv(sys.argv[2])
 nomResults_maf_chr = nomResults_chr.merge(maf_chr, how = 'left', left_on = 'variantID', right_on = 'variantID')
 
 # Write to file
-nomResults_maf_chr.to_csv(sys.argv[3] + '_chr' + str(sys.argv[4]) + '.csv', index = False)
+# nomResults_maf_chr.to_csv(sys.argv[3] + '_chr' + str(sys.argv[4]) + '.csv', index = False)
+nomResults_maf_chr.to_csv(sys.argv[3] + '_MAFs_' + sys.argv[4] + '.csv', index = False)

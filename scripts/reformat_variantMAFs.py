@@ -6,7 +6,7 @@ filePrefix = sys.argv[2]
 # Split up chromosomes
 for chr in range(1, 23):
   # Append to outfile
-  with open('output/coloc/' + filePrefix + '_MAFs_chr' + str(chr) + '.csv', 'a+') as output:
+  with open('output/vcf/' + filePrefix + '_MAFs_chr' + str(chr) + '.csv', 'a+') as output:
     # Header
     output.write('variantID,A1,A2,maf,ma\n')
     # Iterate through freqFile
@@ -36,3 +36,4 @@ for chr in range(1, 23):
         # Write to output      
         if chrom == str(chr):
             output.write(variant + ',' + a1 + ',' + a2 + ',' + str(maf) + ',' + ma + '\n')
+           

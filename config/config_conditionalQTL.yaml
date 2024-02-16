@@ -1,0 +1,26 @@
+
+
+# This samplesheet will contain all file paths that contain eQTL result files (perm_qtl) from a QTLtools permutation pass with corresponding file
+# paths for normalized phenotype data (pheno_data), genotyping data (geno_data), covariate files (cov_data), nominal p-value thresholds (nom_thresholds),
+# and the directory housing chromosome-separated significant nominal variants. The nomFile_prefix is the prefix of the nominal data
+# that would come before any chromosome identifier. For example, if a file is titled CTL_PEER_k20_genoPC_nom1Mb_MAFs_chr1.csv, the
+# prefix would be CTL_PEER_k20_genoPC_nom1Mb_MAFs.
+# Each row in the samplesheet corresponds to a QTL analysis and will be denoted by the name column.
+# The column perm_varID_col should be a number indicating the column number of the variantID in the perm_qtl file, i.e. the variant
+# identifier that matches the variant identifier in the geno_data file. This is 1-indexed.
+
+samplesheet: eQTL_conditional.csv 
+
+# Path to dbSNP file directory for obtaining rsIDs. These files should be split by chromosome.
+dbSNP_dir: /proj/phanstiel_lab/References/genomes/GENCODE.GRCh38.p13/dbSNP/
+# Prefix of every chromosome dbSNP file.
+dbSNP_prefix: "dbSNP155.GRCh38.p13"
+# Suffix (if necessary) of every chromosome dbSNP file.
+dbSNP_suffix: ""
+
+## Software versions/paths
+Rversion: "4.3.1"
+samtoolsVersion: "1.18"
+QTLToolsVersion: "1.3.1"
+pythonVersion: "3.9.6"
+gatkVersion: "4.2.5.0"
