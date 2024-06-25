@@ -18,15 +18,11 @@ case $1 in
     
        'QTLtools_eQTL' | 'runQTLtools_eQTL')
             ## Unlock snakemake workflow
-            snakemake -j 1 --unlock -s snakefiles/QTLtools_eQTL.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py
+            snakemake -j 1 --unlock -s snakefiles/QTLtools_eQTL_1e.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py
             ;;
 
         'responseQTL' | 'run_responseQTL')
-            snakemake -j 1 --unlock -s snakefiles/responseQTL.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py   
-            ;;
-
-        'colocalization' | 'run_colocalization')
-            snakemake -j 1 --unlock -s snakefiles/colocalization.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py
+            snakemake -j 1 --unlock -s snakefiles/responseQTL_4.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py   
             ;;
 
         'RNA_signal' | 'run_RNA_signal')
@@ -36,6 +32,14 @@ case $1 in
         'LD' | 'run_LD')
             snakemake -j 1 --unlock -s snakefiles/LD.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py
             ;;
+            
+        'conditionalQTL_top' | 'run_conditionalQTL_top')
+            snakemake -j 1 --unlock -s snakefiles/conditionalQTL_top_2.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py
+            ;;
+
+         'conditionalQTL_signals' | 'run_conditionalQTL_signals')
+            snakemake -j 1 --unlock -s snakefiles/conditionalQTL_signals_3.smk --cluster-config "config/cluster.yaml" --cluster "sbatch -J {cluster.name} -p {cluster.partition} -t {cluster.time} -c {cluster.cpusPerTask} --mem-per-cpu={cluster.memPerCpu} -N {cluster.nodes} --output {cluster.output} --error {cluster.error} --parsable" --cluster-status ./scripts/status.py
+            ;;    
 esac
 
 ## Deactivate virtual environment

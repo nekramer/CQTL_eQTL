@@ -21,6 +21,9 @@ genomeDir: '/proj/phanstiel_lab/References/genomes/GENCODE.GRCh38.p13/STAR_idx'
 chromSizes: '/proj/phanstiel_lab/References/genomes/GENCODE.GRCh38.p13/STAR_idx/chrNameLength.txt'
 sequence: '/proj/phanstiel_lab/References/genomes/GENCODE.GRCh38.p13/Sequence/GRCh38.p13.genome.fa.gz'
 
+dbSNP_dir: /work/users/n/e/nekramer/References/GRCh38.p14/dbSNP/ # Path to dbSNP file directory for obtaining rsIDs. These files should be split by chromosome.
+dbSNP_prefix: "GRCh38.p14" # Prefix of every chromosome dbSNP file.
+dbSNP_suffix: "expanded" # Suffix (if necessary) of every chromosome dbSNP file.
 
 ## Salmon options
 salmon: '/proj/seq/data/salmon_RNAseq_genomes/hg38_cdna/salmon_index/default' # Path to salmon index.

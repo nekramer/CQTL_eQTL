@@ -17,10 +17,9 @@ else:
     include: "../rules/PEER_kneedle.smk"
     factors = [expand('output/covar/{{condition}}_PEERfactors_k{Nk}.txt', Nk = Nk)],
     var = [expand('output/covar/{{condition}}_PEERfactors_k{Nk}_variance.txt', Nk = Nk)]
-    
-include: "VCFprocessing.smk"
 
-include: "RNAprocessing.smk"
+include: "RNAprocessing_1a.smk"  
+include: "VCFprocessing_1b.smk"
 
 # Rename geno sample IDs in VCF to donor IDs
 rule renameVCFdonors:

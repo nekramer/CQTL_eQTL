@@ -9,7 +9,7 @@ __default__:
   error: "output/logs_slurm/{rule}.{jobid}.err"
   constraint: rhel8
 
-
+# RNAprocessing_1a
 catR1:
   name: "catR1.{wildcards}"
 catR2:
@@ -20,38 +20,43 @@ trim:
   name: "trim.{wildcards}"
   memPerCpu: 5G
 
-
-genoPCA:
-  memPerCpu: 16G
-PEER_eQTL:
-  memPerCpu: 8G
-PEER_nominal_eQTL:
-  memPerCpu: 8G
-
-
+# eQTL_1c
 verifybamid:
   memPerCpu: 64G
 multiqc:
   memPerCpu: 8G
 
-sig_rsIDs:
+# genoCovariate_1d
+genoPCA:
+  memPerCpu: 16G
+
+# QTLtools_eQTL_1e  
+PEER_eQTL:
+  memPerCpu: 8G
+PEER_nominal_eQTL:
+  memPerCpu: 8G
+
+# conditionalQTL_top_2
+get_rsIDs:
+  memPerCpu: 50G
+get_LDbuddies:
   memPerCpu: 32G
-get_LDbuddy_rsIDs:
+reformat_LDbuddies:
   memPerCpu: 32G
+join_LDbuddies:
+  memPerCpu: 64G
+
+
+
+join_signal_LDbuddies:
+  memPerCpu: 64G
+
 join_sigLDbuddies:
   memPerCpu: 16G
 get_reQTLs:
   memPerCpu: 32G
 
-
-coloc_PBS:
-  memPerCpu: 32G
-coloc_FNF_noresponse:
-  memPerCpu: 32G
-coloc_FNFresponse:
-  memPerCpu: 32G
-
-
+# RNA_signal
 signal:
   memPerCpu: 64G
 mergeAlign:
@@ -60,5 +65,5 @@ mergeSignal:
   memPerCpu: 64G
   time: 10-00:00:00
 
-join_LDbuddies:
-  memPerCpu: 64G
+
+

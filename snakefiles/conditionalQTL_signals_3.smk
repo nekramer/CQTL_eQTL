@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # Nicole Kramer
-# 1/31/2024
 # This snakemake workflow is the second part to conditional QTL analysis. conditionalQTL_top needs to be run first
-# to identify independent eGene signals and their top variants. This workflow will get LD buddies for any
-# secondary top variants and get conditional nominal p-values for each separate signal. It uses the same samplesheet
-# from the first workflow and references the files made based on samplesheet 'name' column.
+# to identify independent eGene signals and their top variants. This workflow will get conditional nominal p-values for each separate signal and
+# join them with their minor allele frequencies based on the input genotyping panel.
+# It uses the same samplesheet from the first workflow and references the files made based on samplesheet 'name' column.
+
 import pandas as pd
 import os, subprocess
 
@@ -17,23 +17,13 @@ eqtl_samplesheet = pd.read_csv(config["samplesheet"], sep = ",")
 ## Set up dictionary based on samplesheet to reference files based on wildcard
 eqtl_dict = {}
 for index, row in eqtl_samplesheet.iterrows():
-    eqtl_dict[row["name"]] = {"LD_perm": row["LD_perm"], "pheno_data": row["pheno_data"], "geno_data": row["geno_data"], "cov_data": row["cov_data"], "nom_thresholds": row["nom_thresholds"], "nom_data_dir": row["nom_data_dir"], "nomFile_prefix": row["nomFile_prefix"]}
-
-## Set up dictionary from eqtl_dict to get the geno vcf file prefixes for generating PLINK LD reference files
-ld_prefixes = {}
-## Read in top conditional results and make dictionary of list of snps to get LD for
-ld_snps = {}
+    eqtl_dict[row["name"]] = {"pheno_data": row["pheno_data"], "geno_data": row["geno_data"], "cov_data": row["cov_data"], "nom_thresholds": row["nom_thresholds"], "nom_data_dir": row["nom_data_dir"], "nomFile_prefix": row["nomFile_prefix"]}
 
 ## Set up dictionary of eGenes with multiple signals and their corresponding top variants
 multi_signal_genes = {}
 
 for key in eqtl_dict:
-    # ld prefix
-    ld_prefixes[key] = os.path.splitext(os.path.splitext(os.path.basename(eqtl_dict[key]["geno_data"]))[0])[0]
-    # ld snps
     cond_results = pd.read_csv('output/qtl/' + key + '_cond1Mb_topSignals_rsID.csv')
-    #secondary_cond_results = cond_results.loc[cond_results['signal'] > 0]
-    ld_snps[key] = cond_results['variantID'].values.tolist()
 
     # multi signal genes
     cond_results['n_signal'] = cond_results.groupby('gene_id')['gene_id'].transform('count')
@@ -52,125 +42,11 @@ for key in multi_signal_genes:
 
 rule all:
     input:
-        [expand('output/qtl/{name}_cond1Mb_topSignals_rsID_LD_rsID_final.csv', name = eqtl_dict.keys())],
         rule_all_nominal_file_inputs,
         [expand('output/qtl/{name}_nom1Mb_1signal_{chrom}.csv', name = eqtl_dict.keys(), chrom = "chr" + str(c)) for c in range(1, 23)],
         [expand('output/vcf/{name}_reformat_variantMAFs_{chrom}.done', name = eqtl_dict.keys(), chrom = "chr" + str(c)) for c in range(1, 23)],
         [expand('output/qtl/{name}_allSignals_nom1Mb_MAFs_{chrom}.csv', name = eqtl_dict.keys(), chrom = "chr" + str(c)) for c in range(1, 23)]
 
-
-# This rule will make LD reference files in PLINK format based on the corresponding genotyping data
-rule makeLDref:
-    input:
-        lambda wildcards: eqtl_dict[wildcards.name]["geno_data"]
-    output:
-        'output/vcf/{name}_ldref.done'
-    log:
-        out = 'output/cond/logs/{name}_makeLDref.out',
-        err = 'output/cond/logs/{name}_makeLDref.err'
-    params:
-        prefix = lambda wildcards: ld_prefixes[wildcards.name]
-    shell:
-        """
-        module load plink
-        plink --vcf {input} --double-id --make-bed --out output/vcf/{params.prefix} 1> {log.out} 2> {log.err}
-        touch {output}
-        """
-
-# This rule will use the LD reference generated in makeLDref and run PLINK to calculate LD buddies
-# for secondary signal top signal variants
-rule get_LDbuddies:
-    input:
-        rules.makeLDref.output
-    output:
-        ld = temp('output/cond/ld/{name}_{snp}.ld'),
-        nosex = temp('output/cond/ld/{name}_{snp}.nosex')
-    params:
-        prefix = lambda wildcards: ld_prefixes[wildcards.name]
-    log:
-        'output/cond/{name}_getLDbuddies{snp}.log'
-    shell:
-        """
-        module load plink
-        plink --bfile output/vcf/{params.prefix} --ld-snp {wildcards.snp} --ld-window 200000 --ld-window-kb 1000 --ld-window-r2 0 --r2 --out output/cond/ld/{wildcards.name}_{wildcards.snp}
-        """
-
-# This rule will use the output of get_LD buddies to join a top signal variant's ld buddy with information
-# from the original result file
-rule reformat_LDbuddies:
-    input:
-        buddies = rules.get_LDbuddies.output.ld,
-        topSignal_data = lambda wildcards: 'output/qtl/' + wildcards.name + '_cond1Mb_topSignals_rsID.csv'
-    output:
-        'output/cond/ld/{name}_{snp}_ld.csv'
-    params:
-        version = config['Rversion']
-    log:
-        out = 'output/cond/{name}_reformatLDbuddies{snp}.out',
-        err = 'output/cond/{name}_reformatLDbuddies{snp}.err'
-    shell:
-        """
-        module load r/{params.version}
-        Rscript scripts/reformat_LDbuddies.R {input.topSignal_data} {input.buddies} {wildcards.snp} {output} 1> {log.out} 2> log.err
-        """
-
-# This rule will join the reformatted outputs of separated LD buddies back into one file 
-rule join_LDbuddies:
-    input:
-        lambda wildcards: expand('output/cond/ld/{name}_{snp}_ld.csv', name = wildcards.name, snp = ld_snps[wildcards.name])
-    output:
-        'output/qtl/{name}_cond1Mb_topSignals_rsID_LD_signals.csv'
-    log:
-        out = 'output/cond/{name}_joinLDbuddies.out',
-        err = 'output/cond/{name}_joinLDbuddies.err'
-    run:
-        all_variants = []
-        for file in input:
-            data = pd.read_csv(file)
-            all_variants.append(data)
-
-        final_data = pd.concat(all_variants)
-        final_data.to_csv(output[0], index = False)
-
-rule get_LDbuddy_rsIDs:
-    input:
-        rules.join_LDbuddies.output
-    output:
-        'output/qtl/{name}_cond1Mb_topSignals_rsID_LD_rsID_final.csv'
-    params:
-        version = config['pythonVersion'],
-        dbSNP_dir = config['dbSNP_dir'],
-        dbSNP_prefix = config['dbSNP_prefix'],
-        dbSNP_suffix = config['dbSNP_suffix']
-    log:
-        out = 'output/cond/{name}_getLDbuddy_rsIDs.out',
-        err = 'output/cond/{name}_getLDbuddy_rsIDs.out'
-    shell:
-        """
-        module load python/{params.version}
-        python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {params.dbSNP_suffix} 'ld' {output} 1> {log.out} 2> {log.err}
-        """
-
-# This rule will make the total top variant conditional LD file 
-# by joining original LD results for first signal variants and
-# the output of join_LDbuddies for secondary signal variants
-# rule join_signal_LDbuddies:
-#     input:
-#         topSignal_data = lambda wildcards: 'output/qtl/' + wildcards.name + '_cond1Mb_topSignals_rsID.csv',
-#         perm_LD = lambda wildcards: eqtl_dict[wildcards.name]["LD_perm"],
-#         cond_signal_LD = rules.get_LDbuddy_rsIDs.output
-#     output:
-#         'output/qtl/{name}_cond1Mb_topSignals_rsID_LD_rsID_final.csv'
-#     params:
-#         version = config['Rversion']
-#     log:
-#         out = 'output/cond/{name}_join_signal_LDbuddies.out',
-#         err = 'output/cond/{name}_join_signal_LDbuddies.err'
-#     shell:
-#         """
-#         module load r/{params.version}
-#         Rscript scripts/conditionalQTL/join_signal_LDbuddies_5.R {input.topSignal_data} {input.perm_LD} {input.cond_signal_LD} {output} 1> {log.out} 2> {log.err}
-#         """
 
 # This rule will identify eGenes with more than 1 signal and create dummy files containing their gene ids
 # to be compatible with the QTLtools flag --include-phenotypes 

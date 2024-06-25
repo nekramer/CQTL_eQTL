@@ -19,7 +19,7 @@ read_eGene_variant_nomData <- function(multiSignal_geneRow, name){
                                          gene_id, "_",
                                          variant, 
                                          "_conditionalQTL_nominal_reformat.csv"),
-                                  col_types = "ccddcddccddddddddcd")
+                                  col_types = "ccddcddccdddddddddcd")
   return(reformatted_nomData)
 }
 

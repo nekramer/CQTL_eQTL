@@ -12,11 +12,13 @@
 samplesheet: eQTL_conditional.csv 
 
 # Path to dbSNP file directory for obtaining rsIDs. These files should be split by chromosome.
-dbSNP_dir: /proj/phanstiel_lab/References/genomes/GENCODE.GRCh38.p13/dbSNP/
+#dbSNP_dir: /proj/phanstiel_lab/References/genomes/GENCODE.GRCh38.p13/dbSNP/
+dbSNP_dir: /work/users/n/e/nekramer/References/GRCh38.p14/dbSNP/
 # Prefix of every chromosome dbSNP file.
-dbSNP_prefix: "dbSNP155.GRCh38.p13"
+#dbSNP_prefix: "dbSNP155.GRCh38.p13"
+dbSNP_prefix: "GRCh38.p14"
 # Suffix (if necessary) of every chromosome dbSNP file.
-dbSNP_suffix: ""
+dbSNP_suffix: "expanded"
 
 ## Software versions/paths
 Rversion: "4.3.1"

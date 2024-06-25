@@ -45,7 +45,7 @@ rule_all_inputs = ['output/qc/multiqc_report.html',
                     [expand('output/covar/{condition}_PEERfactors_k{Nk}_variance.txt', condition = ['CTL', 'FNF'], Nk = Nk)]]
 
         
-include: 'genoCovariate.smk'
+include: 'genoCovariate_1d.smk'
 batches = ['RNAKitBatch', 'RNASequencingBatch', 'genoBatch', 'DNAKitBatch']
 
 if config['iteratePEER'] == 'TRUE':
@@ -68,6 +68,7 @@ nomFilter_prefix = 'output/qtl/' + filePrefix + '_nom1Mb'
 nomFilter = 'output/qtl/' + filePrefix + '_nom1Mb_chr{chr}.csv'
 peerMultipleTestingFinal = 'output/qtl/' + filePrefix + '_perm1Mb_FDR.csv'
 peerMultipleTestingSig = 'output/qtl/' + filePrefix + '_perm1Mb_sig.csv'
+peerMultipleTestingSig_rsid = 'output/qtl/' + filePrefix + '_perm1Mb_sig_rsID.csv'
 
 
 if config['iteratePEER'] == 'TRUE':
@@ -90,13 +91,15 @@ PEER_multipleTesting_perm_out_final = 'output/logs/' + filePrefix + '_eQTL_multi
 PEER_multipleTesting_perm_err_final = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm.err'
 PEER_multipleTestingSig_out = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_sig.out'
 PEER_multipleTestingSig_err = 'output/logs/' + filePrefix + '_eQTL_multipleTesting_perm_sig.err'
+PEER_multipleTestingSig_rsid_out = 'output/logs/' + filePrefix + '_perm_get_rsIDs.out'
+PEER_multipleTestingSig_rsid_err = 'output/logs/' + filePrefix + '_perm_get_rsIDs.err'
 
 if config['iteratePEER'] == 'TRUE':
     rule_all_inputs.extend([[expand(peerCov, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(peerQTL_perm, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
-    rule_all_inputs.extend([[expand(peerMultipleTestingSig, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
+    rule_all_inputs.extend([[expand(peerMultipleTestingSig_rsid, condition = ['CTL', 'FNF'], Nk = n) for n in range(1, Nk + 1, config['iterateBy'])]])
     rule_all_inputs.extend([[expand(nomFilter, condition = ['CTL', 'FNF'], Nk = n, chr = c) for n in range(1, Nk + 1, config['iterateBy']) for c in range(1, 23)]])
 else:
     rule_all_inputs.extend([[expand(peerCov, condition = ['CTL', 'FNF'])]])
@@ -104,7 +107,7 @@ else:
     rule_all_inputs.extend([[expand(peerQTL_nominal, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(nomThreshold, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand(nomFilter, condition = ['CTL', 'FNF'], chr = c) for c in range(1, 23)]])
-    rule_all_inputs.extend([[expand(peerMultipleTestingSig, condition = ['CTL', 'FNF'])]])
+    rule_all_inputs.extend([[expand(peerMultipleTestingSig_rsid, condition = ['CTL', 'FNF'])]])
     rule_all_inputs.extend([[expand('output/covar/{condition}_PEERkneedle.txt', condition = ['CTL', 'FNF'])]])
 
 ## Define rules
@@ -112,7 +115,7 @@ rule all:
     input:
         rule_all_inputs
 
-include: "eQTL.smk"
+include: "eQTL_1c.smk"
 
 # Permutation pass
 rule PEER_eQTL:
@@ -287,3 +290,23 @@ rule sig_eGenes:
         module load r/{params.version}
         Rscript scripts/eQTL/separate_eGenes.R {input} {params.threshold} {output} 1> {log.out} 2> {log.err}
         """ 
+
+# This rule will get the rsIDs for significant eGene lead variants
+rule get_rsIDs:
+    input:
+        rules.sig_eGenes.output
+    output:
+        peerMultipleTestingSig_rsid
+    params:
+        version = config['pythonVersion'],
+        dbSNP_dir = config['dbSNP_dir'],
+        dbSNP_prefix = config['dbSNP_prefix'],
+        dbSNP_suffix = config['dbSNP_suffix']
+    log:
+        out = PEER_multipleTestingSig_rsid_out,
+        err = PEER_multipleTestingSig_rsid_err
+    shell:
+        """
+        module load python/{params.version}
+        python3 scripts/get_rsids.py {input} {params.dbSNP_dir} {params.dbSNP_prefix} {params.dbSNP_suffix} 'lead' {output} 1> {log.out} 2> {log.err}
+        """
