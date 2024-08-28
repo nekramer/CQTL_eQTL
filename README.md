@@ -1,5 +1,8 @@
 # CQTL_eQTL
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13381847.svg)](https://doi.org/10.5281/zenodo.13381847)
+
+
 The pipelines used for processing eQTLs, reQTLs, and colocalizations for the CQTL project.
 
 ## Workflow
